@@ -20,6 +20,22 @@ for element in _Elements:
     Elements[element.strip()] = _count
     _count += 1
 
+Constants = {
+    'c' : 299792458;        # (m/s) speed of light in vacuum (exact)
+    'mu':   4.0e-7*pi;      # (N/A^2) magnetic constant mu_0 (exact)
+    'Na':   6.0221415e23;   # Avogadro constants
+    'kB':   1.3806505e-23;  # (J/K) Boltzmann constant
+    'h' :   6.6260693e-34;  # (Js) Planck constnat
+    'G' :   6.6742e-11;     # (m^3/kg/s^2) gravitation constant
+    'e' :   1.60217653e-19; # (J) electron volt
+    'me': 510.998918;       # electron mass in keV
+
+    'ep': 1/(c.mu*c.c^2);         # (F/m) electric constant eps_0
+    'hc': 1e7*c.h*c.c/c.e;        # (keV A) hc
+    're': c.c^2*c.e/c.me;         # classical radius of electron in A
+    'ia': 2*c.h/(c.e^2*c.mu*c.c); # 1/fine-structure
+}
+
 def strtoz(string):
     ''' Converts a string of stoichiometry into a dictionary 
         of corresponding atomic numbers and element count'''
