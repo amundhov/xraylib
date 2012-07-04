@@ -14,20 +14,20 @@ def elcom(hkl,ver,chi):
    s23 = s12+(hz**2*hy**2+kz**2*ky**2+lz**2*ly**2)*sa;
    s34 = 2*(hz**3*hy+kz**3*ky+lz**3*ly)*sa;
    return(s33,s23,s34);
-   
+
 def bw(hkl,ver,chi,E,T,D):
    s33,s23,s34 = elcom(hkl,ver,chi); d = 5.43/sqrt(sum(array(hkl)**2));
    th = arcsin(6.1993/(E*d)); x = pi*chi/180; sx = sin(x); cx = cos(x);
    a = sx-(s23*sx+s34*cx)/s33; g = cos(x+th)*cos(x-th);
    return(-E*T*(sx+g*a)/(D*sin(th)),th*180/pi);
-   
+
 def teff(mu,T,th,chi):
-   cp = abs(cos(pi*(th+chi)/180)); cm = abs(cos(pi*(th-chi)/180));
+   cos_plus = abs(cos(pi*(th+chi)/180)); cos_minus = abs(cos(pi*(th-chi)/180));
    s = ones(chi.shape); p = ones(chi.shape);
-   j = nonzero(abs(chi) < 90-abs(th)); s[j] = -1; p[j] = exp(-mu*T/cm[j]);
-   te = p*(1-exp(-mu*T*(1/cp+s/cm)))/(mu*(1+cp*s/cm));
-   i = nonzero(abs(cp+s*cm)<1.0e-10); te[i] = T*p[i]/cp[i];
-   return(te*cp)
+   j = nonzero(abs(chi) < 90-abs(th)); s[j] = -1; p[j] = exp(-mu*T/cos_minus[j]);
+   te = p*(1-exp(-mu*T*(1/cos_plus+s/cos_minus)))/(mu*(1+cos_plus*s/cos_minus));
+   i = nonzero(abs(cos_plus+s*cos_minus)<1.0e-10); te[i] = T*p[i]/cos_plus[i];
+   return(te*cos_plus)
 
 def rint(hkl,ver,chi,E,T,D,mu):
    w,th = bw(hkl,ver,chi,E,T,D);
