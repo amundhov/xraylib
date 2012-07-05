@@ -22,11 +22,19 @@ class Bunch:
 # >>> xraylib.Xraytable[1]['Density'] # also density of Hydrogen
 #
 
-XrayTable = scipy.io.loadmat('../data/xraytable.mat', squeeze_me=True)['XrayTable']
+# HORRIBLE HACK MUST DIE
+import os,sys,inspect
+cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
+print(cmd_folder)
+if cmd_folder not in sys.path:
+    sys.path.insert(0, cmd_folder)
+    print('FIXME: %s adding %s to system path'%(__name__,cmd_folder))
+
+XrayTable = scipy.io.loadmat('%s/../../data/xraytable.mat'%cmd_folder, squeeze_me=True)['XrayTable']
 # Fake '1'-indexing of table to match atomic number
 XrayTable = np.hstack((np.array(np.zeros(1),dtype=XrayTable.dtype),XrayTable))
 
-_Elements  = scipy.io.loadmat('../data/elements.mat', squeeze_me=True)['elements']
+_Elements  = scipy.io.loadmat('%s/../../data/elements.mat'%cmd_folder, squeeze_me=True)['elements']
 Elements = {}
 _count = 1
 for element in _Elements:
@@ -54,7 +62,8 @@ Constants.add(
 
 def strtoz(string):
     ''' Converts a string of stoichiometry into a dictionary 
-        of corresponding atomic numbers and element count'''
+        of corresponding atomic numbers and element count.
+        E.G H2O -> { ('H':1):2, ('O':8):1 }                 '''
     string = string.replace('Air', 'N4O')
     return _strtoz(string)
 
