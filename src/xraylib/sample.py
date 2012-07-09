@@ -1,10 +1,10 @@
-import common
+import common, pickle
 
 class Sample:
     fields = ['thickness','density','compound','chi']
     units  = ('cm'       ,'g/cm^3' ,''        ,u'\u00B0')
     def __init__(self, thickness, density, compound, chi):
-        '''' Sample with thickness in cm, density in g/cm^3
+        ''' Sample with thickness in cm, density in g/cm^3
              compound as a string and sample angle chi in degrees '''
         self.thickness = thickness
         self.density = density

@@ -99,11 +99,14 @@ def _strtoz(string):
             result = dict()
             while string:
                 count = 1
+                if len(string) == 0:
+                    continue
                 if len(string) > 1 and string[1].islower():
                     el = (string[0:2],Elements[string[0:2]])
                     string = string[2:]
                 else:
-                    #FIXME check for match before indexing
+                    if not string[0] in Elements.keys():
+                        raise Exception('Invalid element %s' % string[0])
                     el = (string[0],Elements[string[0]])
                     string = string[1:]
                 try:
