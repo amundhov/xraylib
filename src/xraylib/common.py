@@ -21,6 +21,9 @@ class Bunch:
 # >>> xraylib.Xraytable['Density'][1] # density of Hydrogen
 # >>> xraylib.Xraytable[1]['Density'] # also density of Hydrogen
 #
+# Please note that numpy's dot function for matrix multiplication does _not_
+# work with scipy sparse matrices (such as the JumpMatrix). Use jumpMatrix.dot(foo)
+# instead.
 
 # HORRIBLE HACK MUST DIE
 import os,sys,inspect
@@ -30,9 +33,12 @@ if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
     print('FIXME: %s adding %s to system path'%(__name__,cmd_folder))
 
-XrayTable = scipy.io.loadmat('%s/../../data/xraytable.mat'%cmd_folder, squeeze_me=True)['XrayTable']
+XrayTable = scipy.io.loadmat('%s/../../data/xraytable.mat'%cmd_folder, squeeze_me=True, mat_dtype=True, struct_as_record=True)['XrayTable']
 # Fake '1'-indexing of table to match atomic number
 XrayTable = np.hstack((np.array(np.zeros(1),dtype=XrayTable.dtype),XrayTable))
+for i in xrange(1,XrayTable.shape[0]):
+    XrayTable['Absorption'][i] = XrayTable['Absorption'][i].transpose()
+    XrayTable['JumpMatrix'][i] = XrayTable['JumpMatrix'][i].transpose()
 
 _Elements  = scipy.io.loadmat('%s/../../data/elements.mat'%cmd_folder, squeeze_me=True)['elements']
 Elements = {}
