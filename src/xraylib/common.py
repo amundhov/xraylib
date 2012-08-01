@@ -33,12 +33,23 @@ if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
     print('FIXME: %s adding %s to system path'%(__name__,cmd_folder))
 
-XrayTable = scipy.io.loadmat('%s/../../data/xraytable.mat'%cmd_folder, squeeze_me=True, mat_dtype=True, struct_as_record=True)['XrayTable']
-# Fake '1'-indexing of table to match atomic number
-XrayTable = np.hstack((np.array(np.zeros(1),dtype=XrayTable.dtype),XrayTable))
-for i in xrange(1,XrayTable.shape[0]):
-    XrayTable['Absorption'][i] = XrayTable['Absorption'][i].transpose()
-    XrayTable['JumpMatrix'][i] = XrayTable['JumpMatrix'][i].transpose()
+class XrayTable:
+    def __init__(self):
+        self.table = scipy.io.loadmat('%s/../../data/xraytable.mat'%cmd_folder, squeeze_me=True, mat_dtype=True, struct_as_record=True)['XrayTable']
+        # Transpose matrices saved in matlab to account for row vs column major
+        for i in xrange(1,self.table.shape[0]):
+            self.table['Absorption'][i] = self.table['Absorption'][i].transpose()
+            self.table['JumpMatrix'][i] = self.table['JumpMatrix'][i].transpose()
+
+    def __getitem__(self,key):
+        if not isinstance(key,int):
+            raise IndexError('First index must be an atomic number')
+        if key > self.table.shape[0] or key < 1:
+            raise IndexError('Invalid atomic number')
+        return self.table[key-1]
+
+# Replace class by singleton instance
+XrayTable = XrayTable()
 
 _Elements  = scipy.io.loadmat('%s/../../data/elements.mat'%cmd_folder, squeeze_me=True)['elements']
 Elements = {}
