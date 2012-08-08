@@ -1,2 +1,6 @@
 *.pyc
 *.py~
+data
+output
+.nfs*
+WorkflowConfiguration.launch
