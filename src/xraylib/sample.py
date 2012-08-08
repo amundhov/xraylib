@@ -1,4 +1,8 @@
-import common, pickle
+import common, crossection
+import pickle
+import numpy as np
+
+from common import Constants
 
 class Sample:
     fields = ['thickness','density','compound','chi']

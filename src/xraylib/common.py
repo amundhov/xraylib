@@ -1,5 +1,6 @@
-import scipy.io
+import pickle
 import numpy as np
+from pkg_resources import resource_string
 
 class Bunch:
     def __init__(self, **kwds):
@@ -25,21 +26,9 @@ class Bunch:
 # work with scipy sparse matrices (such as the JumpMatrix). Use jumpMatrix.dot(foo)
 # instead.
 
-# HORRIBLE HACK MUST DIE
-import os,sys,inspect
-cmd_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
-print(cmd_folder)
-if cmd_folder not in sys.path:
-    sys.path.insert(0, cmd_folder)
-    print('FIXME: %s adding %s to system path'%(__name__,cmd_folder))
-
 class XrayTable:
     def __init__(self):
-        self.table = scipy.io.loadmat('%s/../../data/xraytable.mat'%cmd_folder, squeeze_me=True, mat_dtype=True, struct_as_record=True)['XrayTable']
-        # Transpose matrices saved in matlab to account for row vs column major
-        for i in xrange(1,self.table.shape[0]):
-            self.table['Absorption'][i] = self.table['Absorption'][i].transpose()
-            self.table['JumpMatrix'][i] = self.table['JumpMatrix'][i].transpose()
+        self.table = pickle.loads(resource_string(__name__,'data/xraytable'))
 
     def __getitem__(self,key):
         if not isinstance(key,int):
@@ -51,12 +40,7 @@ class XrayTable:
 # Replace class by singleton instance
 XrayTable = XrayTable()
 
-_Elements  = scipy.io.loadmat('%s/../../data/elements.mat'%cmd_folder, squeeze_me=True)['elements']
-Elements = {}
-_count = 1
-for element in _Elements:
-    Elements[element.strip()] = _count
-    _count += 1
+Elements = pickle.loads(resource_string(__name__,'data/elements'))
 
 
 Constants = Bunch(
