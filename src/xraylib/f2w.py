@@ -118,4 +118,5 @@ class Perkin(Detector):
        self._distance  = 1000
        self._origin    = [204.8,204.8]
        self._tilt      = [0,0]
+       self._pixels    = [2048,2048]
        self._pixelsize = [0.200,0.200]
