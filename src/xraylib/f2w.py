@@ -59,9 +59,6 @@ class Detector:
        """ Integrate image with respect to sensor orientation.
            Returns in numpy arrays amplitude as a function of radius. """
        self._pixels = list(Im.shape)
-       # Squeeze singular dimensions
-       self._pixels = [ o for o in self._pixels if o != 1 ]
-       print(self._pixels)
        if (not self._updated):
           self._calcrt();
        R = self._R[:]; T = self._T[:]; Imc = Im[:]; Imc.shape = prod(Imc.shape);
@@ -114,3 +111,11 @@ class Pixium(Detector):
        self._origin    = [147.84,203.28]
        self._tilt      = [0,0]
        self._pixelsize = [0.154,0.154]
+
+class Perkin(Detector):
+    """ detector object"""
+    def __init__(self):
+       self._distance  = 1000
+       self._origin    = [204.8,204.8]
+       self._tilt      = [0,0]
+       self._pixelsize = [0.200,0.200]
