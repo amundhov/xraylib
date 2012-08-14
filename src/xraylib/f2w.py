@@ -58,6 +58,8 @@ class Detector:
     def integrate(self,Im,n):
        """ Integrate image with respect to sensor orientation.
            Returns in numpy arrays amplitude as a function of radius. """
+       if self._pixels != list(Im.shape):
+          raise Exception('Image dimensions does not match detector specification')
        if (not self._updated):
           self._calcrt();
        R = self._R[:]; T = self._T[:]; Imc = Im[:]; Imc.shape = prod(Imc.shape);
