@@ -55,7 +55,7 @@ class Detector:
            x,y = meshgrid(xv,yv)
            self._R = sqrt(x**2+y**2)*(1.0-a*y-b*x); self._T = arctan2(y,x); self._updated = True
            self._R.shape = prod(self._R.shape); self._T.shape = prod(self._T.shape);
-    def integrate(self,Im,n):
+    def integrate(self,Im,n=1):
        """ Integrate image with respect to sensor orientation.
            Returns in numpy arrays amplitude as a function of radius. """
        if self._pixels != list(Im.shape):
