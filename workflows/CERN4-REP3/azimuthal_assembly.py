@@ -11,33 +11,66 @@ start = time()
 import numpy as np
 
 import xraylib
-from xraylib.f2w import Pixium
+import xraylib.files
+from xraylib import f2w
 
 try:
-    base_name = file_name
+    file_prefix = file_prefix
     directory = file_dir
 except NameError:
     #FIXME MOCK PARAMETERS - REMOVE
-    base_name = 'CERN4-REP3_000'
+    file_prefix = 'CERN4-REP3_000'
     directory = '/data/id15/inhouse/Olof/CERN4-REP3_000/'
+    
+dark_file_name = 'dark_current.h5'
+dark_file_dir = '/mntdirect/_users/hov/workspace/xray/output/CERN4_REP3/'
 
-# Extract experiment parameters from filename.
-# splitext removes any file extension, and the rest of the 
-files = [ o for o in os.listdir(directory) if o.startswith(base_name) ]
-filetype = os.path.splitext(files[0])[1]
-parms = [ os.path.splitext(o)[0].split('_')[1:] for o in files ]
-parms = np.array(parms).T
+dark_current = xraylib.files.Image(dark_file_dir,dark_file_name,'/entry/data/amplitude').getImage()
 
-dimensions = parms.shape[0]
+print('Dark current dimension: %s' % (dark_current.shape))
 
-min_indices = parms.argmin(axis=1)
-max_indices = parms.argmax(axis=1)
+files = [ o for o in os.listdir(directory) if o.startswith(file_prefix) ]
+images = [ xraylib.files.Image(directory,o) for o in files ]
 
-parm_range = [ ( int(parms[i][min_indices[i]]), int(parms[i][max_indices[i]]) ) for i in xrange(0,dimensions) ]
+# Extract experiment parameters from filename 
+# assuming underscore as delimiter.
+# splitext removes any file extension, and 
+parms = [ [int(parm) for parm in os.path.splitext(o)[0].split('_')[1:]]  for o in files ]
+parmsT = np.array(parms).T
+
+dimensions = parmsT.shape[0]
+print('Number of parameters: %s' % dimensions)
+
+print(parmsT)
+
+min_indices = parmsT.argmin(axis=1)
+max_indices = parmsT.argmax(axis=1)
+
+parm_range = [ ( parmsT[i][min_indices[i]], parmsT[i][max_indices[i]] ) for i in xrange(0,dimensions) ]
 parm_size  = [ 1+max-min for min,max in parm_range ]
 
 print '%f seconds finding parms' % (time()-start)
 
+det = f2w.Perkin()
+det.setorigin(np.array([ 197.20634855,  211.88283524]))
+det.settilt(np.array([ -0.18697419,  0.0135755]))
 
-print 'Assembling'
-output = np.zeros(tuple(parm_size))
+result = det.integrate(images[0].getImage())
+
+output = np.zeros(tuple(parm_size)+result[1].squeeze().shape)
+output[tuple(parms[0])] = result[1].squeeze()
+radius = result[0].squeeze()
+
+print('Assembling %s' % (output.shape,)) 
+
+start = time()
+for i in xrange(1,len(files)):
+     # Integrate and save azimuthal amplitude only
+     result = det.integrate(images[i].getImage())
+     result = result[1].squeeze() - dark_current
+     output[tuple(parms[i])] = result
+     print('Parameters   %s' % (parms[i],))
+     print('Integrating  %s' % (files[i]))
+     print('Time used %s' % (time()-start)) 
+
+# TODO: Preserve axes if not null indexed
