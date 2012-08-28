@@ -23,7 +23,7 @@
         </property>
         <property name="File Path" class="ptolemy.data.expr.StringParameter" value="${file_path}">
         </property>
-        <property name="_location" class="ptolemy.kernel.util.Location" value="{404.0, 206.0}">
+        <property name="_location" class="ptolemy.kernel.util.Location" value="{293.0, 267.0}">
         </property>
     </entity>
     <entity name="Data Export" class="org.dawb.passerelle.actors.data.DataExportTransformer">
@@ -47,7 +47,7 @@
         </property>
         <property name="Dataset Name" class="ptolemy.data.expr.StringParameter" value="">
         </property>
-        <property name="_location" class="ptolemy.kernel.util.Location" value="{284.0, 191.0}">
+        <property name="_location" class="ptolemy.kernel.util.Location" value="{201.0, 243.0}">
         </property>
     </entity>
     <entity name="CERN4-REP3_000_000_0000" class="org.dawb.passerelle.actors.data.DataImportSource">
@@ -103,7 +103,7 @@
         </property>
         <property name="Name Mode" class="com.isencia.passerelle.util.ptolemy.StringChoiceParameter" value="Attempt to use image name if there is one.">
         </property>
-        <property name="Python Script" class="com.isencia.passerelle.util.ptolemy.ResourceParameter" value="xray/workflows/CERN4-REP3/azimuthal_assembly.py">
+        <property name="Python Script" class="com.isencia.passerelle.util.ptolemy.ResourceParameter" value="xray/src/CERN4-REP3/azimuthal_assembly.py">
         </property>
         <property name="Create Separate Interpreter" class="ptolemy.data.expr.Parameter" value="false">
         </property>
@@ -111,7 +111,7 @@
         </property>
         <property name="Interpreter Type" class="org.dawb.passerelle.actors.scripts.PythonScript$1" value="Python">
         </property>
-        <property name="Dataset Outputs" class="ptolemy.data.expr.StringParameter" value="output,radius">
+        <property name="Dataset Outputs" class="ptolemy.data.expr.StringParameter" value="">
         </property>
         <property name="Python Interpreter Command" class="ptolemy.data.expr.StringParameter" value="python">
         </property>
@@ -119,7 +119,7 @@
         </property>
         <property name="Python Debug" class="org.dawb.passerelle.actors.scripts.PythonScript$3" value="Start new python rcp server">
         </property>
-        <property name="_location" class="ptolemy.kernel.util.Location" value="{139.0, 173.0}">
+        <property name="_location" class="ptolemy.kernel.util.Location" value="{111.0, 157.0}">
         </property>
     </entity>
     <relation name="_R_3" class="ptolemy.actor.TypedIORelation">

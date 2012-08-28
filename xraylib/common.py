@@ -28,7 +28,7 @@ class Bunch:
 
 class XrayTable:
     def __init__(self):
-        self.table = pickle.loads(resource_string(__name__,'data/xraytable'))
+        self.table = pickle.loads(resource_string(__name__,'data/xraytable.pickle'))
 
     def __getitem__(self,key):
         if not isinstance(key,int):
@@ -40,7 +40,7 @@ class XrayTable:
 # Replace class by singleton instance
 XrayTable = XrayTable()
 
-Elements = pickle.loads(resource_string(__name__,'data/elements'))
+Elements = pickle.loads(resource_string(__name__,'data/elements.pickle'))
 
 
 Constants = Bunch(

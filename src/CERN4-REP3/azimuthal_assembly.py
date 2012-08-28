@@ -25,7 +25,7 @@ except NameError:
 # FIXME - use file import in workbench when
 # http://jira.diamond.ac.uk/browse/DAWNSCI-305 is fixed
 dark_file_name = 'dark_current.h5'
-dark_file_dir = '/mntdirect/_users/hov/workspace/xray/output/CERN4_REP3/'
+dark_file_dir = '/mntdirect/_users/hov/workspace/xray/output/CERN4-REP3/'
 
 dark_current = xraylib.files.Image(dark_file_dir,dark_file_name,'/entry/data/amplitude').getImage()
 
