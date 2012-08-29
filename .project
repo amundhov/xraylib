@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>xray</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.python.pydev.PyDevBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>org.dawb.common.ui.DataBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.dawb.passerelle.common.PasserelleNature</nature>
+		<nature>org.python.pydev.pythonNature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>data/CERN4_REP3/CERN4-REP3_000</name>
+			<type>2</type>
+			<location>/mntdirect/_data_id15_inhouse/Olof/CERN4-REP3_000</location>
+		</link>
+	</linkedResources>
+</projectDescription>
