@@ -28,11 +28,12 @@
 #
 from numpy import zeros, pi, meshgrid, arange, sqrt, arctan2, isnan, floor, prod,\
                   trunc, nonzero, diff, hstack, vstack, int_, transpose, linalg, \
-                  dot, sin, cos
+                  dot, sin, cos, cumsum, ones
 
 class Detector:
-    _R = []
     _T = []
+    _R = []
+    _dr = []
     _updated   = False
     """A general detector object"""
     def setdist(self,D):
@@ -55,25 +56,30 @@ class Detector:
            x,y = meshgrid(xv,yv)
            self._R = sqrt(x**2+y**2)*(1.0-a*y-b*x); self._T = arctan2(y,x); self._updated = True
            self._R.shape = prod(self._R.shape); self._T.shape = prod(self._T.shape);
+           self._Rind = self._R.argsort(axis=None);
+           n = cumsum(ones(self._Rind.shape));
+           self._dr = sqrt(self._pixelsize[0]*self._pixelsize[1])
+           i = floor(self._R[self._Rind]/self._dr + 0.5)
+           self._jind = 0 < diff(i);
+           self._nR = i[self._jind]*self._dr;
+           self._dcj = diff(hstack((0,n[self._jind])))
     def integrate(self,Im,n=1):
-       """ Integrate image with respect to sensor orientation.
-           Returns in numpy arrays amplitude as a function of radius. """
-       if self._pixels != list(Im.shape):
-          raise Exception('Image dimensions does not match detector specification')
        if (not self._updated):
           self._calcrt();
-       R = self._R[:]; T = self._T[:]; Imc = Im[:]; Imc.shape = prod(Imc.shape);
-       dr = sqrt(self._pixelsize[0]*self._pixelsize[1])
-       if (1 < n):
-          tpi = 2.0*pi; dp = tpi/n; ip = int_(floor(T/dp+0.5)%n); A = zeros([0,n]);
-          for i in range(n):
-             j = nonzero(ip == i); a = self._pie(Imc[j],R[j],dr); M = a.shape[0]; m = A.shape[0];
-             if (m < M):
-                A = vstack((A,zeros([M-m,n])))
-             a.shape = M; A[:M,i] = a;
+       Imc = Im[:]; Imc.shape = prod(Imc.shape);
+       if n>1:
+           R = self._R[:]; T = self._T[:]; dr = self._dr;
+           tpi = 2.0*pi; dp = tpi/n; ip = int_(floor(T/dp+0.5)%n); A = zeros([0,n]);
+           for i in range(n):
+              j = nonzero(ip == i); a = self._pie(Imc[j],R[j],dr); M = a.shape[0]; m = A.shape[0];
+              if (m < M):
+                 A = vstack((A,zeros([M-m,n])))
+              a.shape = M; A[:M,i] = a;
        else:
-           A = self._pie(Imc,R,dr);
-       m = A.shape[0]; r = arange(m)*dr; r.shape = [m,1]; return(r,A)
+           A = zeros(self._nR.shape); c = Imc[self._Rind].cumsum()[self._jind];
+           A[0] = c[0]; A[1:] = diff(c); A = A/self._dcj;
+       return(self._nR,A);
+
     def _pie(self,Im,R,dr):
        mn = prod(Im.shape); j = R.argsort(axis=None); w = R[j]/dr;
        ir = int_(w); w0 = 1.0+ir-w; w1 = 1.0-w0; c0 = w0*Im[j]; c1 = w1*Im[j];
@@ -88,14 +94,15 @@ class Detector:
        y = zeros([N,1]); z = zeros([N,1]); dy = zeros([N,1]); dz = zeros([N,1]);
        sc = 2*pi/sqrt(self._pixelsize[0]*self._pixelsize[1]);
        while ((0.1 < stp) and (loops < 30)):
+          # FIXME: dimension mismatch
           r,A = self.integrate(Im,N); i = nonzero((rg[0] < r)*(r < rg[1]))[0]; r = r[i,:]; A = A[i,:];
-          d = diff(A[:,-1])/diff(r[:,0]); C = vstack((A[:-1,-1],d,d*r[:-1,0]**2/D)).T;
+          d = diff(A[:,-1])/diff(r); C = vstack((A[:-1,-1],d,d*r**2/D)).T;
           for j in range(N):
-             w = sc*r[:-1,0]/(A[:-1,j]+1); Cs = (C*w[:,[0,0,0]]).T; db = linalg.inv(dot(Cs,C));
+             w = sc*r/(A[:-1,j]+1); Cs = (C*w[:,[0,0,0]]).T; db = linalg.inv(dot(Cs,C));
              b = dot(db,dot(Cs,A[:-1,j])); y[j] = b[1]/b[0]; z[j] = b[2]/b[0];
              c = hstack((1,-y[j]))/b[0]; c.shape = [1,2]; dy[j] = dot(c,dot(db[[1,0],:][:,[1,0]],c.T));
              c = hstack((1,-z[j]))/b[0]; c.shape = [1,2]; dz[j] = dot(c,dot(db[[2,0],:][:,[2,0]],c.T));
-             d = diff(A[:,j])/diff(r[:,0]); C = vstack((A[:-1,j],d,d*r[:-1,0]**2/D)).T;
+             d = diff(A[:,j])/diff(r); C = vstack((A[:-1,j],d,d*r**2/D)).T;
           y = y/dp; z = z/dp; dy = dy/dp**2; dz = dz/dp**2; C = vstack((cos(p),-sin(p))).T;
           w = (1/dy); Cs = (C*w[:,[0,0]]).T; db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,y));
           stp = sum(c**2); q = c/stp; stp = stp/dot(dot(q.T,db),q); c.shape = 2;
