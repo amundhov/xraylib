@@ -69,7 +69,7 @@ start = time()
 for i in xrange(1,len(files)):
      # Integrate and save azimuthal amplitude only
      result = det.integrate(images[i].getImage())
-     result = result[1].squeeze() - dark_current
+     result = result[1].squeeze() #- dark_current
      output[tuple(parms[i])] = result
      print('Parameters   %s' % (parms[i],))
      print('Integrating  %s' % (files[i]))

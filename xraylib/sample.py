@@ -25,9 +25,9 @@ class Sample:
         return format_str % tuple(self._attribute_list()) % Sample.units
     def __str__(self):
         return unicode(self).encode('utf-8')
-    #FIXME: FUGLY, Fix object-passing in workbench
+    #FIXME: Use pickle or something else
     def serialize(self):
-        return _attribute_list()
+        return pickle(self)
     def _attribute_list(self):
         return [getattr(self,o) for o in Sample.fields]
     def mass_attenuation_coefficient(self,E):
@@ -47,3 +47,6 @@ def weighted(fun):
         return res
     return wrapped_fun
 
+@weighted
+def fail(sample):
+    return 1

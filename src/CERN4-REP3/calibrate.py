@@ -15,15 +15,14 @@ try:
     file_name
     file_path
 except NameError:
-    file_name = 'CeO2-900mm-90keV1.h5'
-    file_path = '/mntdirect/_users/hov/workspace/xray/output/CERN4-REP3/CeO2-900mm-90keV1.h5'
+    file_name = 'calibration_image.h5'
+    file_path = '/mntdirect/_users/hov/workspace/xray/output/CERN4-REP3/calibration_image.h5'
 
 try:
     image
 except NameError:
     # image not given, open calibration file manually
     extension = os.path.splitext(file_name)[1]
-    print extension
     if extension == '.edf':
         import EdfFile
         image = EdfFile(file_path).GetData(0)
