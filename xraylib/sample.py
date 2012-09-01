@@ -25,9 +25,6 @@ class Sample:
         return format_str % tuple(self._attribute_list()) % Sample.units
     def __str__(self):
         return unicode(self).encode('utf-8')
-    #FIXME: FUGLY, Fix object-passing in workbench
-    def serialize(self):
-        return _attribute_list()
     def _attribute_list(self):
         return [getattr(self,o) for o in Sample.fields]
     def mass_attenuation(self,E):
