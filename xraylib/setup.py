@@ -10,9 +10,9 @@ print ' ---> Exporting X-ray data '
 
 # Transpose matrices saved in matlab to account for row vs column major
 xraytable = io.loadmat('data/xraytable.mat', squeeze_me=True, mat_dtype=True, struct_as_record=True)['XrayTable']
-for i in xrange(1,xraytable.shape[0]):
-    xraytable['Absorption'][i] = xraytable['Absorption'][i].transpose()
-    xraytable['JumpMatrix'][i] = xraytable['JumpMatrix'][i].transpose()
+for i in range(0,xraytable.shape[0]):
+   xraytable['Absorption'][i] = xraytable['Absorption'][i].transpose()
+   xraytable['JumpMatrix'][i] = xraytable['JumpMatrix'][i].transpose()
 
 _elements  = io.loadmat('data/elements.mat', squeeze_me=True)['elements']
 elements = {}

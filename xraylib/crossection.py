@@ -15,7 +15,7 @@ def get_cross_section(E,z):
     Q = np.array([ B[i] <= E for i in xrange(0,5) ] + [ np.ones(E.shape,dtype=bool) ])
     Q[1:6] *= 1-Q[0:5]
     cross_section[0:6] = XrayTable[z]['JumpMatrix'].dot(cross_section[0:6]*Q)
-    return sum(cross_section), XrayTable[z]['Density']
+    return np.array([sum(cross_section), XrayTable[z]['Density']])
 
 def klein_nishina(e0, two_theta, polarisation=0):
     ct = np.cos(np.deg2rad(two_theta))

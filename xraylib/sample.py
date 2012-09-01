@@ -30,10 +30,9 @@ class Sample:
         return _attribute_list()
     def _attribute_list(self):
         return [getattr(self,o) for o in Sample.fields]
-    def mass_attenuation_coefficient(self,E):
-        cross_section,mass = weighted(crossection.get_cross_section)(self,E)
-        return total_cross_section*(Constants.Na*1e-24/mass)
-
+    def mass_attenuation(self,E):
+        total_cross_section,total_mass = weighted(crossection.get_cross_section)(self,E)
+        return total_cross_section*(Constants.Na*1e-24)/total_mass
 
 def weighted(fun):
     ''' Decorator for calculations which are to be
