@@ -1,7 +1,7 @@
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE entity PUBLIC "-//UC Berkeley//DTD MoML 1//EN"
     "http://ptolemy.eecs.berkeley.edu/xml/dtd/MoML_1.dtd">
-<entity name="newModel" class="ptolemy.actor.TypedCompositeActor" source="/mntdirect/_users/hov/workspace/xray/workflows/CERN4-REP3/assemble_volume.moml">
+<entity name="newModel" class="ptolemy.actor.TypedCompositeActor" source="/home/amundhov/work/esrf/workspace/xraylib/workflows/CERN4-REP3/assemble_volume.moml">
     <property name="_createdBy" class="ptolemy.kernel.attributes.VersionAttribute" value="7.0.1">
     </property>
     <property name="_workbenchVersion" class="ptolemy.kernel.attributes.VersionAttribute" value="null">
