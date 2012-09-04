@@ -27,11 +27,21 @@ class Sample:
         return unicode(self).encode('utf-8')
     def _attribute_list(self):
         return [getattr(self,o) for o in Sample.fields]
-    def mass_attenuation(self,E):
-        total_cross_section,total_mass = weighted(crossection.get_cross_section)(self,E)
-        return total_cross_section*(Constants.Na*1e-24)/total_mass
 
-def weighted(fun):
+    # Computed quantities of compund
+
+    def mass_attenuation(self,E):
+        total_cross_section,total_mass = _weighted(crossection.get_cross_section)(self,E)
+        return total_cross_section*(Constants.Na*1e-24)/total_mass
+    def form_factor(self,q):
+        ''' Calculates the form factor of sample given
+            scattering vector q = 4*pi*sin(Theta)/lambda'''
+        def interpolate():
+            return 1
+        form_factor = _weighted(interpolate)(q)
+        return form_factor
+
+def _weighted(fun):
     ''' Decorator for calculations which are to be
         weighted according to sample stoichiometry. '''
     def wrapped_fun(sample,*_args,**_kwargs):
