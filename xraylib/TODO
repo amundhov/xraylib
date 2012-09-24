@@ -1,0 +1,6 @@
+   - Complete calculation of form factors in sample.py
+   - Verify numbers are consistent with matlab scripts. gcs.m already
+     verified
+   - Ensure python2/3 cross compability or state required python version
+   - Search and resolve FIXMEs
+   - Complete package metadata and upload to PyPI index?

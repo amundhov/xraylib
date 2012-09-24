@@ -1,0 +1,17 @@
+On initial use you should run setup.py in order to generate the data files used
+by the module
+
+   :~$ python setup.py
+
+It's also possible to generate a python egg for use with easy_install if you
+want a site-wide installation
+
+   $~: python setup.py bdist_egg && easy_install dist/*.egg
+
+f2w.py
+   Contains routines for calibrating and integrating diffraction images.
+   Example usage is availabe at the head of the file.
+
+sample.py
+   Class for calculating mass attenuation, form factors etc. of sample
+   according to stoichiometry and thickness.

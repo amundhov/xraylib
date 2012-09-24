@@ -1,0 +1,18 @@
+azimuthal_assembly.py
+
+   Reads file prefix and path from workflow containing a series of diffraction
+images to be assembled.  For each file in the directory matching the file
+prefix the underscore delimited parameters are extracted, image integrated and
+put into a numpy array w.r.t. the parameters.  The numpy array is exported to a
+H5 file in the DAWN workflow.
+
+calibrate.py
+
+   Loads calibration file, does some simple thresholding to reduce nois and
+performs calibration of the Perkin detector.
+
+dark_currrent.py
+
+   Loads dark current images and integrates according to calibration
+parameters obtained from calibrate.py after performing median filtering.
+

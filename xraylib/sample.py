@@ -42,8 +42,9 @@ class Sample:
         return form_factor
 
 def _weighted(fun):
-    ''' Decorator for calculations which are to be
-        weighted according to sample stoichiometry. '''
+    ''' Decorator for calculations which are to be weighted
+        according to sample stoichiometry. Returns a function
+        which calls fun for each element in the sample.'''
     def wrapped_fun(sample,*_args,**_kwargs):
         Z = [ o[1] for o in sample.compound[1].keys() ]
         weights = sample.compound[1].values()
