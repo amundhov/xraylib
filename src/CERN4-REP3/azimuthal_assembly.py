@@ -34,9 +34,9 @@ print('Dark current dimension: %s' % (dark_current.shape))
 files = [ o for o in os.listdir(directory) if o.startswith(file_prefix) ]
 images = [ xraylib.files.Image(directory,o) for o in files ]
 
-# Extract experiment parameters from filename 
-# assuming underscore as delimiter.
-# splitext removes any file extension, and 
+# Assuming file names NAME_xxx_yyy_zzz.hd5
+# Get range of parameters x,y,z
+# splitext removes any file extension.
 parms = [ [int(parm) for parm in os.path.splitext(o)[0].split('_')[1:]]  for o in files ]
 parmsT = np.array(parms).T
 
@@ -54,6 +54,7 @@ parm_size  = [ 1+max-min for min,max in parm_range ]
 print '%f seconds finding parms' % (time()-start)
 
 det = f2w.Perkin()
+# FIXME: Get calibration from configfile or similar
 det.setorigin(np.array([ 197.20634855,  211.88283524]))
 det.settilt(np.array([ -0.18697419,  0.0135755]))
 
@@ -75,4 +76,4 @@ for i in xrange(1,len(files)):
      print('Integrating  %s' % (files[i]))
      print('Time used %s' % (time()-start)) 
 
-# TODO: Preserve axes if not null indexed
+# TODO: Preserve axes if parameters are not null indexed.

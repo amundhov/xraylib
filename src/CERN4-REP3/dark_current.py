@@ -27,6 +27,7 @@ for i in xrange(0,len(files)):
 
 print('%s seconds used' % (time()-start))
 
+# FIXME Refactor script to require calibrated detector object
 det = f2w.Perkin()
 det.setorigin(np.array([ 197.20634855,  211.88283524]))
 det.settilt(np.array([ -0.18697419,  0.0135755]))
