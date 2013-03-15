@@ -38,17 +38,17 @@ images = [ xraylib.files.Image(directory,o) for o in files ]
 # Get range of parameters x,y,z
 # splitext removes any file extension.
 parms = [ [int(parm) for parm in os.path.splitext(o)[0].split('_')[1:]]  for o in files ]
-parmsT = np.array(parms).T
+parmsTranspose = np.array(parms).T
 
-dimensions = parmsT.shape[0]
+dimensions = parmsTranspose.shape[0]
 print('Number of parameters: %s' % dimensions)
 
-print(parmsT)
+print(parmsTranspose)
 
-min_indices = parmsT.argmin(axis=1)
-max_indices = parmsT.argmax(axis=1)
+min_indices = parmsTranspose.argmin(axis=1)
+max_indices = parmsTranspose.argmax(axis=1)
 
-parm_range = [ ( parmsT[i][min_indices[i]], parmsT[i][max_indices[i]] ) for i in xrange(0,dimensions) ]
+parm_range = [ ( parmsTranspose[i][min_indices[i]], parmsTranspose[i][max_indices[i]] ) for i in xrange(0,dimensions) ]
 parm_size  = [ 1+max-min for min,max in parm_range ]
 
 print '%f seconds finding parms' % (time()-start)
