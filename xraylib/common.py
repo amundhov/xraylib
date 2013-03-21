@@ -15,8 +15,6 @@ class Bunch:
         return format_str % tuple(self.__dict__.values())
 
 #
-# XrayTable contains various data related to interactions with X-rays for a
-# range of elements.
 # >>> import xraylib
 # >>> xraylib.XrayTable.dtype # list all available fields
 # >>> xraylib.Xraytable['Density'][1] # density of Hydrogen
@@ -27,6 +25,9 @@ class Bunch:
 # instead.
 
 class XrayTable:
+    ''' XrayTable contains various data related to
+    interactions with X-rays for a range of elements. '''
+
     def __init__(self):
         self.table = pickle.loads(resource_string(__name__,'data/xraytable.pickle'))
 
@@ -48,8 +49,8 @@ Constants = Bunch(
     mu =   4.0e-7*np.pi,   # (N/A^2) magnetic constant mu_0 (exact)
     Na =   6.0221415e23,   # Avogadro constants
     kB =   1.3806505e-23,  # (J/K) Boltzmann constant
-    h  =   6.6260693e-34,  # (Js) Planck constnat
-    G  =   6.6742e-11,     # (m^3/kg/s^2) gravitation constant
+    h  =   6.6260693e-34,  # (Js) Planck constant
+    G  =   6.6742e-11,     # (m^3/kg/s^2) gravitational constant
     e  =   1.60217653e-19, # (J) electron volt
     me = 510.998918        # electron mass in keV
 )

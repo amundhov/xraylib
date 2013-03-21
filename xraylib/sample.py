@@ -9,7 +9,7 @@ class Sample:
     units  = ('cm'       ,'g/cm^3' ,''        ,u'\u00B0')
     def __init__(self, thickness, density, compound, chi):
         ''' Sample with thickness in cm, density in g/cm^3
-             compound as a string and sample angle chi in degrees '''
+            compound as a string and sample angle chi in degrees '''
         self.thickness = thickness
         self.density = density
         if isinstance(compound,basestring):
@@ -31,8 +31,10 @@ class Sample:
     # Computed quantities of compund
 
     def mass_attenuation(self,E):
+        ''' Mass attenuation coefficient cm^2 g^-1. '''
         total_cross_section,total_mass = _weighted(crossection.get_cross_section)(self,E)
         return total_cross_section*(Constants.Na*1e-24)/total_mass
+
     def form_factor(self,q):
         ''' Calculates the form factor of sample given
             scattering vector q = 4*pi*sin(Theta)/lambda'''
