@@ -37,8 +37,14 @@ class XrayTable:
         if key > self.table.shape[0] or key < 1:
             raise IndexError('Invalid atomic number')
         return self.table[key-1]
+    def __repr__(self):
+        ''' Give a listing of available data '''
+        return '\n'.join(self.table.dtype.names)
+    def __str__(self):
+        return self.__repr__()
 
 # Replace class by singleton instance
+# Loads xray data once.
 XrayTable = XrayTable()
 
 Elements = pickle.loads(resource_string(__name__,'data/elements.pickle'))
