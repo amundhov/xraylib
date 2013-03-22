@@ -145,9 +145,3 @@ def _getmatchedparentheses(string):
     elif balance < 0:
         raise ValueError('Unmatched ) parenthesis')
     return (left,index)
-
-def _teststrtoz():
-    assert(strtoz('H') == { ('H',1):1, })
-    assert(strtoz('(H)') == { ('H',1):1, })
-    assert(strtoz('(H)2') == { ('H',1):2, })
-    assert(strtoz('(H)()') == { ('H',1):1, })
