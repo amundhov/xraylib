@@ -8,8 +8,8 @@ class Sample:
     fields = ['thickness','density','compound','chi']
     units  = ('cm'       ,'g/cm^3' ,''        ,u'\u00B0')
     def __init__(self, thickness, density, compound, chi):
-        ''' Sample with thickness in cm, density in g/cm^3
-            compound as a string and sample angle chi in degrees '''
+        """ Sample with thickness in cm, density in g/cm^3
+            compound as a string and sample angle chi in degrees """
         self.thickness = thickness
         self.density = density
         if isinstance(compound,basestring):
@@ -17,8 +17,6 @@ class Sample:
         else:
             self.compound = compound
         self.chi = chi
-    def __repr__(self):
-        return 'Sample(%s)' % ",".join(Sample.fields)
     def __unicode__(self):
         format_str = u": %s%%s\n".join([ o.capitalize() for o in Sample.fields ])
         format_str +=u": %s%%s\n"
@@ -31,22 +29,22 @@ class Sample:
     # Computed quantities of compund
 
     def mass_attenuation(self,E):
-        ''' Mass attenuation coefficient cm^2 g^-1. '''
-        total_cross_section,total_mass = _weighted(crossection.get_cross_section)(self,E)
+        """ Mass attenuation coefficient cm^2 g^-1. """
+        total_cross_section, cumm_density, total_mass = _weighted(crossection.get_cross_section)(self,E)
         return total_cross_section*(Constants.Na*1e-24)/total_mass
 
     def form_factor(self,q):
-        ''' Calculates the form factor of sample given
-            scattering vector q = 4*pi*sin(Theta)/lambda'''
+        """ Calculates the form factor of sample given
+            scattering vector q = 4*pi*sin(Theta)/lambda """
         def interpolate():
             return 1
         form_factor = _weighted(interpolate)(q)
         return form_factor
 
 def _weighted(fun):
-    ''' Decorator for calculations which are to be weighted
+    """ Decorator for calculations which are to be weighted
         according to sample stoichiometry. Returns a function
-        which calls fun for each element in the sample.'''
+        which calls fun for each element in the sample. """
     def wrapped_fun(sample,*_args,**_kwargs):
         Z = [ o[1] for o in sample.compound[1].keys() ]
         weights = sample.compound[1].values()
