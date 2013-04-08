@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+
+from numpy import *
+
+import xraylib, os
+from xraylib import f2w
+
+#    if extension == '.edf':
+#        import EdfFile
+#        image = EdfFile(file_path).GetData(0)
+#    elif extension == '.h5':
+#        import h5py
+#        file = h5py.File(file_path)
+#        image = file['/entry/image'].value
+#        image = image.squeeze()
+
+if __name__ == "__main__":
+    # Take arguments from command line
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option("-V", "--version", dest="version", action="store_true",
+                      help="print version of the program and quit", metavar="FILE", default=False)
+    parser.add_option("-o", "--out", dest="outfile",
+                      help="Filename where processed calibration image is saved", metavar="FILE", default="calibration.edf")
+    parser.add_option("-v", "--verbose",
+                      action="store_true", dest="debug", default=False,
+                      help="switch to debug/verbose mode")
+    parser.add_option("-d", "--dark", dest="dark",
+                  help="list of dark images to average and subtract", default=None)
+    parser.add_option("-D", "--detector", dest="detector_name",
+                  help="Detector name", default=None)
+
+    (options, args) = parser.parse_args()
+
+    print options
+    print args
+
+    if options.detector_name is not None:
+        detector = f2w.get_detector(options.detector_name)
+    else:
+        raise Exception("Detector missing")
+
+    if options.dark:
+        print options.dark, type(options.dark)
+        darkFiles = [f for f in options.dark.split(",") if os.path.isfile(f)]
+

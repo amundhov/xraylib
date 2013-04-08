@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 from setuptools import setup
+import os, sys, glob
 
+script_files = glob.glob("scripts/*")
 
 setup(name='xraylib',
       version='0.9',
@@ -9,6 +11,7 @@ setup(name='xraylib',
       package_data = { 'xraylib' : ['data/*.pickle'], },
       include_package_data=True,
       packages=['xraylib'],
+      scripts=script_files,
       test_suite='tests',
       install_requires=['numpy'],
       author='Amund Hov',
