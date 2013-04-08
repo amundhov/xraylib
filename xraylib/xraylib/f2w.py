@@ -129,3 +129,28 @@ class Perkin(Detector):
        self._tilt      = [0,0]
        self._pixels    = [2048,2048]
        self._pixelsize = [0.200,0.200]
+
+def get_detector(name):
+    """ Detector name to object translation.
+        Based on similar method in pyFAI.  """
+    detectors = {"perkin": Perkin,
+                 "pixium": Pixium, }
+    _name = name.lower()
+    if _name in detectors:
+        return detectors[_name]()
+    else:
+        raise Exception('Detector %s not known.' % (name,))
+
+class Calibration(object):
+    def __init__(self, image, detector):
+        self.image = image
+        self.detector = detector
+
+    def calibrate(self, lower=10, upper=350, threshold=100):
+        """ Calibrate tilt and origin of detector using data in the interval
+        [@lower,@upper]mm with a value exceeding @threshold. """
+        image = self.image
+        image[image<threshold] = 0
+        det.calibrate(image,[lower,upper])
+        print(det)
+        parms = unicode(det)
