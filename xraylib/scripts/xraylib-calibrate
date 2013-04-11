@@ -1,18 +1,9 @@
 #!/usr/bin/env python
 
-from numpy import *
+import numpy as np
 
 import xraylib, os
-from xraylib import f2w
-
-#    if extension == '.edf':
-#        import EdfFile
-#        image = EdfFile(file_path).GetData(0)
-#    elif extension == '.h5':
-#        import h5py
-#        file = h5py.File(file_path)
-#        image = file['/entry/image'].value
-#        image = image.squeeze()
+from xraylib import f2w, files
 
 if __name__ == "__main__":
     # Take arguments from command line
@@ -32,15 +23,27 @@ if __name__ == "__main__":
 
     (options, args) = parser.parse_args()
 
-    print options
-    print args
+    if len(args) !=1:
+        parser.error("Please provide one and only one calibration image")
 
     if options.detector_name is not None:
         detector = f2w.get_detector(options.detector_name)
     else:
-        raise Exception("Detector missing")
+        parser.error("Detector missing")
+
+    print options, args
+    calibration_image = files.Image(args[0]).getImage()
 
     if options.dark:
+        # FIXME allow files to be arguments, not comma separated list
         print options.dark, type(options.dark)
-        darkFiles = [f for f in options.dark.split(",") if os.path.isfile(f)]
+        darkImages = [files.Image(f).getImage() for f in options.dark.split(",") if os.path.isfile(f)]
+        darkImages = nunp.array(darkImages)
+        dark_current = np.median(darkImages,axis=0)
+        calibration_image = calibration_image - dark_current
+
+    # Do the calibration
+    calibrator = f2w.Calibrator(calibration_image, detector)
+    calibrator.calibrate()
+    print(calibrator)
 
