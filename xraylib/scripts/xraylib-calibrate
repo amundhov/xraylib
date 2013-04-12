@@ -46,7 +46,7 @@ if __name__ == "__main__":
         # FIXME allow files to be arguments, not comma separated list
         print options.dark, type(options.dark)
         darkImages = [files.Image(f).getImage() for f in options.dark.split(",") if os.path.isfile(f)]
-        darkImages = nunp.array(darkImages)
+        darkImages = np.array(darkImages)
         dark_current = np.median(darkImages,axis=0)
         calibration_image = calibration_image - dark_current
 
