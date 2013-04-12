@@ -140,7 +140,7 @@ def get_detector(name):
     else:
         raise Exception('Detector %s not known.' % (name,))
 
-class Calibration(object):
+class Calibrator(object):
     def __init__(self, image, detector):
         self.image = image
         self.detector = detector
@@ -150,6 +150,7 @@ class Calibration(object):
         [@lower,@upper]mm with a value exceeding @threshold. """
         image = self.image
         image[image<threshold] = 0
-        det.calibrate(image,[lower,upper])
-        print(det)
-        parms = unicode(det)
+        self.detector.calibrate(image,[lower,upper])
+
+    def __str__(self):
+        return str(self.detector)
