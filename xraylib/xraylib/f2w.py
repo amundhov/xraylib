@@ -94,15 +94,14 @@ class Detector:
        y = zeros([N,1]); z = zeros([N,1]); dy = zeros([N,1]); dz = zeros([N,1]);
        sc = 2*pi/sqrt(self._pixelsize[0]*self._pixelsize[1]);
        while ((0.1 < stp) and (loops < 30)):
-          # FIXME: dimension mismatch
           r,A = self.integrate(Im,N); i = nonzero((rg[0] < r)*(r < rg[1]))[0]; r = r[i,:]; A = A[i,:];
-          d = diff(A[:,-1])/diff(r); C = vstack((A[:-1,-1],d,d*r**2/D)).T;
+          d = diff(A[:,-1])/diff(r); C = vstack((A[:-1,-1],d,d*r[-1:]**2/D)).T;
           for j in range(N):
-             w = sc*r/(A[:-1,j]+1); Cs = (C*w[:,[0,0,0]]).T; db = linalg.inv(dot(Cs,C));
+             w = sc*r[:-1]/(A[:-1,j]+1); Cs = (C*w[:,[0,0,0]]).T; db = linalg.inv(dot(Cs,C));
              b = dot(db,dot(Cs,A[:-1,j])); y[j] = b[1]/b[0]; z[j] = b[2]/b[0];
              c = hstack((1,-y[j]))/b[0]; c.shape = [1,2]; dy[j] = dot(c,dot(db[[1,0],:][:,[1,0]],c.T));
              c = hstack((1,-z[j]))/b[0]; c.shape = [1,2]; dz[j] = dot(c,dot(db[[2,0],:][:,[2,0]],c.T));
-             d = diff(A[:,j])/diff(r); C = vstack((A[:-1,j],d,d*r**2/D)).T;
+             d = diff(A[:,j])/diff(r); C = vstack((A[:-1,j],d,d*r[:-1]**2/D)).T;
           y = y/dp; z = z/dp; dy = dy/dp**2; dz = dz/dp**2; C = vstack((cos(p),-sin(p))).T;
           w = (1/dy); Cs = (C*w[:,[0,0]]).T; db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,y));
           stp = sum(c**2); q = c/stp; stp = stp/dot(dot(q.T,db),q); c.shape = 2;
