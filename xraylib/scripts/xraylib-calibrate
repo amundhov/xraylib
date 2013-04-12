@@ -8,6 +8,7 @@ from xraylib import f2w, files
 if __name__ == "__main__":
     # Take arguments from command line
     from optparse import OptionParser
+    usage = " "
     parser = OptionParser()
     parser.add_option("-V", "--version", dest="version", action="store_true",
                       help="print version of the program and quit", metavar="FILE", default=False)
@@ -20,6 +21,13 @@ if __name__ == "__main__":
                   help="list of dark images to average and subtract", default=None)
     parser.add_option("-D", "--detector", dest="detector_name",
                   help="Detector name", default=None)
+    parser.add_option("--distance", dest="detector_distance",
+                  help="Detector distance from sample", default=None)
+    parser.add_option ('--tilt', dest="detector_tilt", nargs=2, action='append',
+                  help="", metavar="<tilt1> <tilt2>", default=None)
+    parser.add_option ('--origin', dest="detector_origin", nargs=2, action='append',
+                  help="Detector origin wrt sample, also known as PONI (Point of normal incidence)",
+                  metavar="<poni1> <poni2>", default=None)
 
     (options, args) = parser.parse_args()
 
