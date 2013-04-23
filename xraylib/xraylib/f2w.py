@@ -30,12 +30,18 @@ from numpy import zeros, pi, meshgrid, arange, sqrt, arctan2, isnan, floor, prod
                   trunc, nonzero, diff, hstack, vstack, int_, transpose, linalg, \
                   dot, sin, cos, cumsum, ones
 
-class Detector:
+import utils
+
+class Detector(object):
     _T = []
     _R = []
     _dr = []
     _updated   = False
     """A general detector object"""
+    def __init__(self, **kwargs):
+        for key in kwargs:
+            if key in ['distance','tilt', 'origin']:
+                self.__dict__.update({'_%s' % key : utils.toFloat(kwargs[key])})
     def setdist(self,D):
        self._distance = D; self._updated = False;
     def setorigin(self,v):
@@ -113,30 +119,34 @@ class Detector:
 
 class Pixium(Detector):
     """Pixium detector object"""
-    def __init__(self):
+    def __init__(self, **kwargs):
+       """ Set up default geometry and
+           allow it to be overriden in base __init__ """
        self._distance  = 1000
        self._origin    = [147.84,203.28]
        self._tilt      = [0,0]
        self._pixels    = [1920,2640]
        self._pixelsize = [0.154,0.154]
+       super(Pixium,self).__init__(**kwargs)
 
 class Perkin(Detector):
     """ detector object"""
-    def __init__(self):
+    def __init__(self, **kwargs):
        self._distance  = 1000
        self._origin    = [204.8,204.8]
        self._tilt      = [0,0]
        self._pixels    = [2048,2048]
        self._pixelsize = [0.200,0.200]
+       super(Perkin,self).__init__(**kwargs)
 
-def get_detector(name):
+def get_detector(name, **kwargs):
     """ Detector name to object translation.
         Based on similar method in pyFAI.  """
     detectors = {"perkin": Perkin,
                  "pixium": Pixium, }
     _name = name.lower()
     if _name in detectors:
-        return detectors[_name]()
+        return detectors[_name](**kwargs)
     else:
         raise Exception('Detector %s not known.' % (name,))
 

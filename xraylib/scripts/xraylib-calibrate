@@ -15,15 +15,22 @@ if __name__ == "__main__":
     from optparse import OptionParser
     usage = " "
     parser = OptionParser()
+
     parser.add_option("-V", "--version", dest="version", action="store_true",
                       help="print version of the program and quit", metavar="FILE", default=False)
-    parser.add_option("-o", "--out", dest="outfile",
-                      help="Filename where processed calibration image is saved", metavar="FILE", default="calibration.edf")
     parser.add_option("-v", "--verbose",
                       action="store_true", dest="debug", default=False,
                       help="switch to debug/verbose mode")
+
+    parser.add_option("-o", "--out", dest="outfile",
+                      help="Filename where processed calibration image is saved", metavar="FILE", default="calibration_image.edf")
+    parser.add_option("--data-set", dest="data_set",
+                      help="Location to save data set.", metavar="STRING", default="/xraylib/calibration_image")
     parser.add_option("-d", "--dark", dest="dark",
                   help="list of dark images to average and subtract", default=None)
+    parser.add_option("-p", "--poni", dest="poni_file",
+                      help="File to save detector geometry", metavar="FILE", default="geometry.poni")
+
     parser.add_option("-D", "--detector", dest="detector_name",
                   help="Detector name", default=None)
     parser.add_option("--distance", dest="detector_distance",
@@ -39,8 +46,16 @@ if __name__ == "__main__":
     if len(args) !=1:
         parser.error("Please provide one and only one calibration image")
 
+    # Set up detector
+    DETECTOR_KWARGS = {
+            'distance': options.detector_distance,
+            'origin'  : options.detector_origin[0],
+            'tilt'    : options.detector_tilt[0],
+    }
+
     if options.detector_name is not None:
-        detector = f2w.get_detector(options.detector_name)
+        DETECTOR_KWARGS = utils.strip_none_values(DETECTOR_KWARGS)
+        detector = f2w.get_detector(options.detector_name, **DETECTOR_KWARGS)
     else:
         parser.error("Detector missing")
 
@@ -56,6 +71,7 @@ if __name__ == "__main__":
         calibration_image = calibration_image - dark_current
 
     # Do the calibration
+
     calibrator = f2w.Calibrator(calibration_image, detector)
     calibrator.calibrate()
     print(calibrator)
@@ -63,4 +79,18 @@ if __name__ == "__main__":
     if options.outfile:
         f = files.ImageFile(options.outfile)
         f.saveImage(calibration_image, options.data_set)
+
+    if pyFAI is None and options.poni_file:
+        parser.error("pyFAI needed for PONI file")
+    elif pyFAI is not None and options.poni_file:
+        from pyFAI import geometry
+        g = geometry.Geometry()
+        g.setFit2D(detector._distance, detector._origin[0]/detector._pixelsize[0],
+                                       detector._origin[1]/detector._pixelsize[1],
+                                    tilt=detector._tilt[0],
+                        tiltPlanRotation=detector._tilt[1],
+                                pixelX=detector._pixelsize[0],
+                                pixelY=detector._pixelsize[1])
+        g.save(options.poni_file)
+
 
