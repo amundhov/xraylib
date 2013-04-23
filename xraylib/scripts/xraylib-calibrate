@@ -3,7 +3,12 @@
 import numpy as np
 
 import xraylib, os
-from xraylib import f2w, files
+from xraylib import f2w, files, utils
+
+try:
+    import pyFAI
+except ImportError:
+    pyFAI = None
 
 if __name__ == "__main__":
     # Take arguments from command line
