@@ -85,8 +85,8 @@ if __name__ == "__main__":
     elif pyFAI is not None and options.poni_file:
         from pyFAI import geometry
         g = geometry.Geometry()
-        g.setFit2D(detector._distance, detector._origin[0]/detector._pixelsize[0],
-                                       detector._origin[1]/detector._pixelsize[1],
+        g.setFit2D(detector._distance, detector._origin[0]/detector._pixelsize[0], # mm -> pixel
+                                       detector._origin[1]/detector._pixelsize[1], # mm -> pixel
                                     tilt=detector._tilt[0],
                         tiltPlanRotation=detector._tilt[1],
                                 pixelX=detector._pixelsize[0],
