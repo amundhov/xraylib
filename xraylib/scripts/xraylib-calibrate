@@ -13,8 +13,11 @@ except ImportError:
 if __name__ == "__main__":
     # Take arguments from command line
     from optparse import OptionParser
-    usage = " "
-    parser = OptionParser()
+    usage = 'Usage: %prog <options> [DARK_CURRENT_FILE,...] CALIBRATION_FILE'
+    description = """
+    Xray-calibration routine based on ring shape.
+    """
+    parser = OptionParser(usage=usage,description=description)
 
     parser.add_option("-V", "--version", dest="version", action="store_true",
                       help="print version of the program and quit", metavar="FILE", default=False)
