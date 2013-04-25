@@ -67,12 +67,9 @@ if __name__ == "__main__":
 
     if options.dark:
         # FIXME allow files to be arguments, not comma separated list
-        print options.dark, type(options.dark)
-        darkImages = [files.ImageFile(f).getImage() for f in options.dark.split(",") if os.path.isfile(f)]
-        darkImages = np.array(darkImages)
-        dark_current = np.median(darkImages,axis=0)
         if options.verbose:
             print("---> Averaging dark images")
+        dark_current = utils.averageImages(options.dark.split(","))
         calibration_image = calibration_image - dark_current
 
     # Do the calibration
