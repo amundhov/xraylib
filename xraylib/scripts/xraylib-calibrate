@@ -37,17 +37,17 @@ if __name__ == "__main__":
     parser.add_option("-D", "--detector", dest="detector_name",
                   help="Detector name", default=None)
     parser.add_option("--distance", dest="detector_distance",
-                  help="Detector distance from sample", default=None)
+                  help="Detector distance from sample", metavar="<distance> [mm]",default=None)
     parser.add_option ('--tilt', dest="detector_tilt", nargs=2, action='append',
-                  help="", metavar="<tilt1> <tilt2>", default=None)
+                  help="", metavar="<tilt1> <tilt2> [degrees]", default=None)
     parser.add_option ('--origin', dest="detector_origin", nargs=2, action='append',
                   help="Detector origin wrt sample, also known as PONI (Point of normal incidence)",
-                  metavar="<poni1> <poni2>", default=None)
+                  metavar="<poni1> <poni2> [mm]", default=None)
 
     (options, args) = parser.parse_args()
 
-    if len(args) !=1:
-        parser.error("Please provide one and only one calibration image")
+    if len(args) == 0:
+        parser.error("Please provide a calibration image")
 
     # Set up detector
     DETECTOR_KWARGS = {
