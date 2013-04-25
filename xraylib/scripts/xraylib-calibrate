@@ -52,8 +52,8 @@ if __name__ == "__main__":
     # Set up detector
     DETECTOR_KWARGS = {
             'distance': options.detector_distance,
-            'origin'  : options.detector_origin[0],
-            'tilt'    : options.detector_tilt[0],
+            'origin'  : options.detector_origin,
+            'tilt'    : options.detector_tilt,
     }
 
     if options.detector_name is not None:
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     else:
         parser.error("Detector missing")
 
-    print options, args
+    #print options, args
     calibration_image = files.ImageFile(args[0]).getImage()
 
     if options.dark:
