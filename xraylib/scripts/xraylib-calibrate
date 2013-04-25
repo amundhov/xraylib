@@ -10,93 +10,106 @@ try:
 except ImportError:
     pyFAI = None
 
+class Calibration(object):
+    def parser_setup(self):
+        from optparse import OptionParser
+        usage = 'Usage: %prog <options> [DARK_CURRENT_FILE,...] CALIBRATION_FILE'
+        description = """
+        Xray-calibration routine based on ring shape.
+        """
+        parser = OptionParser(usage=usage,description=description)
+
+        parser.add_option("-V", "--version", dest="version", action="store_true",
+                          help="print version of the program and quit", metavar="FILE", default=False)
+        parser.add_option("-v", "--verbose",
+                          action="store_true", dest="verbose", default=False,
+                          help="switch to debug/verbose mode")
+
+        parser.add_option("-o", "--out", dest="outfile",
+                          help="Filename where processed calibration image is saved", metavar="FILE", default="calibration_image.edf")
+        parser.add_option("--data-set", dest="data_set",
+                          help="Location to save data set.", metavar="STRING", default="/xraylib/calibration_image")
+        parser.add_option("-d", "--dark", dest="dark",
+                      help="list of dark images to average and subtract", default=None)
+        parser.add_option("-p", "--poni", dest="poni_file",
+                          help="File to save detector geometry", metavar="FILE", default="geometry.poni")
+
+        parser.add_option("-D", "--detector", dest="detector_name",
+                      help="Detector name", default=None)
+        parser.add_option("--distance", dest="detector_distance",
+                      help="Detector distance from sample", metavar="<distance> [mm]",default=None)
+        parser.add_option ('--tilt', dest="detector_tilt", nargs=2, action='append',
+                      help="", metavar="<tilt1> <tilt2> [degrees]", default=None)
+        parser.add_option ('--origin', dest="detector_origin", nargs=2, action='append',
+                      help="Detector origin wrt sample, also known as PONI (Point of normal incidence)",
+                      metavar="<poni1> <poni2> [mm]", default=None)
+
+        self.parser = parser
+
+    def parse(self):
+
+        (self.options,self.args) = self.parser.parse_args()
+
+        if len(self.args) == 0:
+            self.parser.error("Please provide a calibration image")
+
+        # Set up self.detector
+        DETECTOR_KWARGS = {
+                'distance': self.options.detector_distance,
+                'origin'  : self.options.detector_origin,
+                'tilt'    : self.options.detector_tilt,
+        }
+
+        if self.options.detector_name is not None:
+            DETECTOR_KWARGS = utils.strip_none_values(DETECTOR_KWARGS)
+            self.detector = f2w.get_detector(self.options.detector_name, **DETECTOR_KWARGS)
+        else:
+            self.parser.error("self.detector missing")
+
+        #print self.options, args
+        calibration_image = files.ImageFile(self.args[0]).getImage()
+
+        if self.options.dark:
+            # FIXME allow files to be arguments, not comma separated list
+            if self.options.verbose:
+                print("---> Averaging dark images")
+            dark_current = utils.averageImages(self.options.dark.split(","))
+            calibration_image = calibration_image - dark_current
+
+        if self.options.outfile:
+            if self.options.verbose:
+                print('---> Saving %s' % (self.options.outfile,))
+            f = files.ImageFile(self.options.outfile)
+            f.saveImage(calibration_image, self.options.data_set)
+
+        self.calibrator = f2w.Calibrator(calibration_image, self.detector)
+
+    def calibrate(self):
+        if self.options.verbose:
+            print("---> Calibrating")
+        self.calibrator.calibrate()
+        print(self.calibrator)
+
+        if pyFAI is None and self.options.poni_file:
+            self.parser.error("pyFAI needed for PONI file")
+        elif pyFAI is not None and self.options.poni_file:
+            from pyFAI import geometry
+            g = geometry.Geometry()
+            g.setFit2D(self.detector._distance, self.detector._origin[0]/self.detector._pixelsize[0], # mm -> pixel
+                                           self.detector._origin[1]/self.detector._pixelsize[1], # mm -> pixel
+                                        tilt=self.detector._tilt[0],
+                            tiltPlanRotation=self.detector._tilt[1],
+                                    pixelX=self.detector._pixelsize[0],
+                                    pixelY=self.detector._pixelsize[1])
+            if self.options.verbose:
+                print('---> Writing geometry to %s' % (self.options.poni_file,))
+            g.save(self.options.poni_file)
+
 if __name__ == "__main__":
-    # Take arguments from command line
-    from optparse import OptionParser
-    usage = 'Usage: %prog <options> [DARK_CURRENT_FILE,...] CALIBRATION_FILE'
-    description = """
-    Xray-calibration routine based on ring shape.
-    """
-    parser = OptionParser(usage=usage,description=description)
+    cal = Calibration()
 
-    parser.add_option("-V", "--version", dest="version", action="store_true",
-                      help="print version of the program and quit", metavar="FILE", default=False)
-    parser.add_option("-v", "--verbose",
-                      action="store_true", dest="verbose", default=False,
-                      help="switch to debug/verbose mode")
-
-    parser.add_option("-o", "--out", dest="outfile",
-                      help="Filename where processed calibration image is saved", metavar="FILE", default="calibration_image.edf")
-    parser.add_option("--data-set", dest="data_set",
-                      help="Location to save data set.", metavar="STRING", default="/xraylib/calibration_image")
-    parser.add_option("-d", "--dark", dest="dark",
-                  help="list of dark images to average and subtract", default=None)
-    parser.add_option("-p", "--poni", dest="poni_file",
-                      help="File to save detector geometry", metavar="FILE", default="geometry.poni")
-
-    parser.add_option("-D", "--detector", dest="detector_name",
-                  help="Detector name", default=None)
-    parser.add_option("--distance", dest="detector_distance",
-                  help="Detector distance from sample", metavar="<distance> [mm]",default=None)
-    parser.add_option ('--tilt', dest="detector_tilt", nargs=2, action='append',
-                  help="", metavar="<tilt1> <tilt2> [degrees]", default=None)
-    parser.add_option ('--origin', dest="detector_origin", nargs=2, action='append',
-                  help="Detector origin wrt sample, also known as PONI (Point of normal incidence)",
-                  metavar="<poni1> <poni2> [mm]", default=None)
-
-    (options, args) = parser.parse_args()
-
-    if len(args) == 0:
-        parser.error("Please provide a calibration image")
-
-    # Set up detector
-    DETECTOR_KWARGS = {
-            'distance': options.detector_distance,
-            'origin'  : options.detector_origin,
-            'tilt'    : options.detector_tilt,
-    }
-
-    if options.detector_name is not None:
-        DETECTOR_KWARGS = utils.strip_none_values(DETECTOR_KWARGS)
-        detector = f2w.get_detector(options.detector_name, **DETECTOR_KWARGS)
-    else:
-        parser.error("Detector missing")
-
-    #print options, args
-    calibration_image = files.ImageFile(args[0]).getImage()
-
-    if options.dark:
-        # FIXME allow files to be arguments, not comma separated list
-        if options.verbose:
-            print("---> Averaging dark images")
-        dark_current = utils.averageImages(options.dark.split(","))
-        calibration_image = calibration_image - dark_current
-
-    # Do the calibration
-
-    calibrator = f2w.Calibrator(calibration_image, detector)
-    if options.verbose:
-        print("---> Calibrating")
-    calibrator.calibrate()
-    print(calibrator)
-
-    if options.outfile:
-        if options.verbose:
-            print('---> Saving calibration image - %s' % (options.outfile,))
-        f = files.ImageFile(options.outfile)
-        f.saveImage(calibration_image, options.data_set)
-
-    if pyFAI is None and options.poni_file:
-        parser.error("pyFAI needed for PONI file")
-    elif pyFAI is not None and options.poni_file:
-        from pyFAI import geometry
-        g = geometry.Geometry()
-        g.setFit2D(detector._distance, detector._origin[0]/detector._pixelsize[0], # mm -> pixel
-                                       detector._origin[1]/detector._pixelsize[1], # mm -> pixel
-                                    tilt=detector._tilt[0],
-                        tiltPlanRotation=detector._tilt[1],
-                                pixelX=detector._pixelsize[0],
-                                pixelY=detector._pixelsize[1])
-        g.save(options.poni_file)
-
+    cal.parser_setup()
+    cal.parse()
+    # TODO: while loop where integration limits and threshold can be adjusted
+    cal.calibrate()
 
