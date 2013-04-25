@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser.add_option("-V", "--version", dest="version", action="store_true",
                       help="print version of the program and quit", metavar="FILE", default=False)
     parser.add_option("-v", "--verbose",
-                      action="store_true", dest="debug", default=False,
+                      action="store_true", dest="verbose", default=False,
                       help="switch to debug/verbose mode")
 
     parser.add_option("-o", "--out", dest="outfile",
@@ -71,15 +71,21 @@ if __name__ == "__main__":
         darkImages = [files.ImageFile(f).getImage() for f in options.dark.split(",") if os.path.isfile(f)]
         darkImages = np.array(darkImages)
         dark_current = np.median(darkImages,axis=0)
+        if options.verbose:
+            print("---> Averaging dark images")
         calibration_image = calibration_image - dark_current
 
     # Do the calibration
 
     calibrator = f2w.Calibrator(calibration_image, detector)
+    if options.verbose:
+        print("---> Calibrating")
     calibrator.calibrate()
     print(calibrator)
 
     if options.outfile:
+        if options.verbose:
+            print('---> Saving calibration image - %s' % (options.outfile,))
         f = files.ImageFile(options.outfile)
         f.saveImage(calibration_image, options.data_set)
 
