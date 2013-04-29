@@ -33,3 +33,19 @@ class ImageFile:
             edf_image = fabio.edfimage.edfimage(image)
             edf_image.write(self.file_path)
 
+# TODO write test
+def averageImages(file_names, method='median', fast_edf=False):
+    """ Load and average a list of images. """
+    file_names = [ f for f in file_names if os.path.isfile(f)]
+    if len(file_names) == 0:
+        raise Exception("No valid files to average")
+    if fast_edf:
+        edf_image = fabio.edfimage.edfimage().read(file_names[0])
+        images = np.dstack([ edf_image.fastReadData(f) for f in file_names ])
+    else:
+        images = np.dstack([ ImageFile(f).getImage() for f in file_names ])
+
+    if method == 'median':
+        return np.median(images,axis=2)
+    else:
+        raise Exception('METHOD NOT IMPLEMENTED')
