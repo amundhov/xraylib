@@ -1,7 +1,7 @@
 import numpy as np
-import optparse,os
+import optparse,os, time
 
-import xraylib
+import xraylib, fabio
 from xraylib import files
 
 def strip_none_values(dictionary):
@@ -28,6 +28,7 @@ class Script(object):
     def __init__(self):
         self.usage = 'Usage: %prog <options> '
         self.description=""
+        self.timings = []
 
     def parser_setup(self):
         parser = optparse.OptionParser(usage=self.usage,description=self.description)
@@ -40,10 +41,29 @@ class Script(object):
         parser.add_option("-s", "--silent",
                           action="store_true", dest="silent", default=False,
                           help="supress output to terminal.")
+        parser.add_option("-t", "--timings",
+                          action="store_true", dest="timings", default=False,
+                          help="Report execution times.")
         self.parser = parser
 
     def parse(self):
         (self.options,self.args) = self.parser.parse_args()
+
+    @classmethod
+    def timed(cls, fun):
+        def wrapper(self, *args, **kwargs):
+            start = time.time()
+            fun(self, *args, **kwargs)
+            self.timings.append((fun.__name__,time.time()-start),)
+        return wrapper
+
+    def print_timings(self):
+        if not self.options.timings:
+            return
+        print("=== Execution time ===")
+        for (i,j) in self.timings:
+            print('%s: %.2fs' % (i.capitalize(),j))
+
 
     def print_verbose(self,*args):
         if self.options.verbose or not self.options.silent:
