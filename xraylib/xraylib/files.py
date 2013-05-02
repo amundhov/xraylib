@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 import fabio
 
@@ -47,5 +48,7 @@ def averageImages(file_names, method='median', fast_edf=False):
 
     if method == 'median':
         return np.median(images,axis=2)
+    elif method == 'mean':
+        return np.mean(images,axis=2)
     else:
         raise Exception('METHOD NOT IMPLEMENTED')

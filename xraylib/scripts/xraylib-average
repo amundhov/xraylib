@@ -27,6 +27,9 @@ class Averager(utils.Script):
         self.parser.add_option("-f", "--fast",
                           action="store_true", dest="fast_edf", default=False,
                           help="Use fast data reading [edf only].")
+        self.parser.add_option("--method",
+                          dest="method", default="median",
+                          metavar="[median][mean]", help="Choose between arithmetic mean and median.")
 
     def parse(self):
         super(Averager, self).parse()
