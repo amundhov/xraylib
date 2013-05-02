@@ -54,7 +54,7 @@ class Script(object):
             return
         print("=== Execution time ===")
         for (i,j) in self.timings:
-            print('%s: %.2fs' % (i.capitalize(),j))
+            print('%s: %.2fs' % (i.replace('_',' ').capitalize(),j))
 
 
     def print_verbose(self,*args):
