@@ -25,22 +25,33 @@ class Bunch:
 # instead.
 
 class XrayTable:
-    ''' XrayTable contains various data related to
-    interactions with X-rays for a range of elements. '''
+    """ XrayTable contains various data related to
+    interactions with X-rays for a range of elements. """
 
     def __init__(self):
+        self.loaded = False
+
+    def _load(self):
         self.table = pickle.loads(resource_string(__name__,'data/xraytable.pickle'))
 
     def __getitem__(self,key):
+        if not self.loaded:
+            self._load()
         if not isinstance(key,int):
             raise IndexError('First index must be an atomic number')
         if key > self.table.shape[0] or key < 1:
             raise IndexError('Invalid atomic number')
         return self.table[key-1]
+
     def __repr__(self):
-        ''' Give a listing of available data '''
+        """ Give a listing of available data """
+        if not self.loaded:
+            self._load()
         return '\n'.join(self.table.dtype.names)
+
     def __str__(self):
+        if not self.loaded:
+            self._load()
         return self.__repr__()
 
 # Replace class by singleton instance
@@ -48,6 +59,7 @@ class XrayTable:
 XrayTable = XrayTable()
 
 Elements = pickle.loads(resource_string(__name__,'data/elements.pickle'))
+
 
 
 Constants = Bunch(
