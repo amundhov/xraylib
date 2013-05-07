@@ -3,6 +3,15 @@ import numpy as np
 
 import fabio
 
+def saveDataset(file_handle, data, data_set='/xraylib/image'):
+    group = file_handle.require_group(os.path.dirname(data_set))
+    dataset = group.require_dataset(
+                    name=os.path.basename(data_set),
+                    shape=data.shape,
+                    dtype=data.dtype
+                    )
+    dataset[:] = data
+
 class ImageFile:
     def __init__(self,file_path):
         self.extension = os.path.splitext(file_path)[1]
@@ -22,17 +31,12 @@ class ImageFile:
         if self.extension == '.h5':
             import h5py
             with h5py.File(self.file_path) as f:
-                group = f.require_group(os.path.dirname(data_set))
-                dataset = group.require_dataset(
-                                name=os.path.basename(data_set),
-                                shape=image.shape,
-                                dtype=image.dtype
-                                )
-                dataset[:] = image
+                saveDataset(f, image, data_set)
         elif self.extension == '.edf':
             import fabio
             edf_image = fabio.edfimage.edfimage(image)
             edf_image.write(self.file_path)
+
 
 # TODO write test
 def averageImages(file_names, method='median', fast_edf=False):
