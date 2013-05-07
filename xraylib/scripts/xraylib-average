@@ -46,7 +46,7 @@ class Averager(utils.Script):
 
     @utils.Script.timed
     def average(self):
-        self.image = files.averageImages(self.args, fast_edf=self.options.fast_edf)
+        self.image = utils.averageImages(self.args, fast_edf=self.options.fast_edf)
 
     @utils.Script.timed
     def output(self):
