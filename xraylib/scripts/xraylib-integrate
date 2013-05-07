@@ -136,10 +136,10 @@ class Integrator(utils.Script):
             index = self.parameters[i]-self.parameter_min
             self.print_verbose("Integrating ", self.file_names[i], index)
             image = edf_image.fastReadData(os.path.join(self.directory,self.file_names[i]))
+            self.print_verbose("Veijo routine")
             (tth,result) = self.det.integrate(image)
             result = result - self.background_profile
             #FIXME don't hardcode three parameters
-            self.print_verbose("Veijo routine")
             self.dataset[0,index[0],index[1],index[2],:] = result.astype(np.float32)
             self.print_verbose("pyFAI")
             tth, I = self.integrator.xrpd_LUT(image, self.background_profile.shape[0], safe=False)
