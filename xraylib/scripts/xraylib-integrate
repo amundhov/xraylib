@@ -1,0 +1,161 @@
+#!/usr/bin/env python
+
+import numpy as np
+import os, optparse, h5py, fabio
+
+import xraylib
+from xraylib import f2w, files, utils
+
+try:
+    import pyFAI
+except ImportError:
+    pyFAI = None
+
+
+class Integrator(utils.Script):
+    def __init__(self):
+        super(Integrator, self).__init__()
+        self.description = """
+        Integrate diffraction images and assemble into dataset.
+        Experiment parameters are assumed to be separated by underscore
+
+        E.g.  NAME_xxx_yyy_zzz.edf
+
+        will produce a data set with powder profiles in dimensions x,y,z.
+        """
+        self.usage="Usage: <options> --data-prefix=/mnt/data/../EXPERIMENT_..."
+
+    def parser_setup(self):
+        super(Integrator, self).parser_setup()
+
+        input_group = optparse.OptionGroup(self.parser, "Input options")
+        input_group.add_option("--input-prefix", dest="input_path",
+                          metavar="/path/IMAGE_xyz_",
+                          help="Integrate files starting with this path.")
+        #input_group.add_option("--dark-prefix", dest="dark_prefix",
+        #                  metavar="/path/DARK_xyz_",
+        #                  help="Use dark noise files starting with this path.")
+        input_group.add_option("--dark", dest="dark",
+                          help="Dark noise image.")
+        input_group.add_option("-p", "--ponit", dest="poni_file",
+                          help="Name of poni file with detector geometry.")
+
+        output_group = optparse.OptionGroup(self.parser, "Output options")
+        output_group.add_option("-o", "--out", dest="outfile",
+                          help="File to save integrated dataset.", metavar="FILE", default="sinogram.h5")
+        output_group.add_option("--data-set", dest="data_set",
+                          help="Location to save data set.", metavar="STRING", default="/xraylib/sinogram")
+
+        self.parser.add_option_group(input_group)
+        self.parser.add_option_group(output_group)
+
+        self.parser.add_option("-f", "--fast",
+                          action="store_true", dest="fast_edf", default=False,
+                          help="Use fast data reading [edf only].")
+        self.parser.add_option("--skip", dest="skip", default=0,
+                          help="Skip processing x first diffraction patterns.",
+                          metavar="x")
+
+    @utils.Script.timed
+    def parse(self):
+        super(Integrator, self).parse()
+
+        (self.directory,file_prefix) = os.path.split(os.path.expanduser(self.options.input_path))
+        if self.directory == '':
+            directory = '.'
+        else:
+            directory = self.directory
+        # FIXME sort files
+        self.file_names = [ o for o in os.listdir(directory) if o.startswith(file_prefix) ]
+
+        # TODO write test
+        if self.options.fast_edf and not all([os.path.splitext(file_path)[1] == '.edf' for file_path in self.file_names]):
+            self.parser.error("Fast data reading only available for edf files")
+
+        if len(self.options.data_set.split('/')) < 2:
+            self.parser.error("Dataset should be on the form '/group_name/data_set'.")
+
+        self.parameters = [ [int(parm) for parm in os.path.splitext(o)[0].split('_')[1:]] for o in self.file_names ]
+        parametersT = np.array(self.parameters).T
+
+        self.number_of_parameters = parametersT.shape[0]
+        self.print_verbose('Number of parameters: ', self.number_of_parameters)
+
+        min_indices = parametersT.argmin(axis=1)
+        max_indices = parametersT.argmax(axis=1)
+
+        parameter_interval = np.array([ [ parametersT[i][min_indices[i]], parametersT[i][max_indices[i]] ] for i in xrange(0,self.number_of_parameters) ])
+        self.parameter_count  = [ j-i+1 for i,j in parameter_interval ]
+        self.parameter_min = parameter_interval.T[0]
+
+        if self.options.poni_file and os.path.exists(self.options.poni_file):
+            self.integrator = pyFAI.load(self.options.poni_file)
+        else:
+            self.parser.error("Need poni file to set up Azimuthal integrator.")
+
+        if os.path.exists(self.options.dark):
+            self.dark = files.ImageFile(self.options.dark).getImage()
+            self.integrator.darkcurrent = self.dark
+
+
+    @utils.Script.timed
+    def create_dataset(self):
+        self.print_verbose("Creating dataset")
+        print(self.parameter_count)
+
+        # FIXME remove once confirmed
+        self.det = f2w.Perkin()
+        self.det.setdist(900)
+        self.det.setorigin(np.array([197.20642451, 211.88283919]))
+        self.det.settilt(np.array([-0.18039263, 0.01076819]))
+        self.print_verbose("Integrating background (Veijo)")
+        (two_theta, self.background_profile) = self.det.integrate(self.dark)
+
+        self.print_verbose("Final shape:", (2,) + tuple(self.parameter_count) + self.background_profile.shape,)
+        self.print_verbose("dtype", self.background_profile.dtype)
+
+        self.hd5 = h5py.File(self.options.outfile)
+        group = self.hd5.require_group(os.path.dirname(self.options.data_set))
+        self.dataset = group.require_dataset(
+                           name=os.path.basename(self.options.data_set),
+                           # FIXME remove (2,) when done testing
+                           shape=(2,) + tuple(self.parameter_count) + self.background_profile.shape,
+                           chunks=(2,) + tuple(self.parameter_count) + (1,),
+                           dtype="float32"
+                        )
+
+    @utils.Script.timed
+    def integrate_and_assemble(self):
+        self.print_verbose("Integrating ", len(self.parameters), "images")
+        if self.options.fast_edf:
+            edf_image = fabio.edfimage.edfimage().read(self.directory+self.file_names[0])
+        else:
+            self.parser.error("Unimplemented")
+
+        for i in xrange(0, len(self.parameters)):
+            index = self.parameters[i]-self.parameter_min
+            self.print_verbose("Integrating ", self.file_names[i], index)
+            image = edf_image.fastReadData(self.file_names[i])
+            (tth,result) = self.det.integrate(image)
+            result = result - self.background_profile
+            #FIXME don't hardcode three parameters
+            self.print_verbose("Veijo routine")
+            self.dataset[0,index[0],index[1],index[2],:] = result.astype(np.float32)
+            self.print_verbose("pyFAI")
+            tth, I = self.integrator.xrpd_LUT(image, self.background_profile.shape[0], safe=False)
+            self.dataset[1,index[0],index[1],index[2],:] = I
+
+    @utils.Script.timed
+    def output(self):
+        self.hd5.close()
+
+if __name__ == '__main__':
+    intg = Integrator()
+
+    intg.parser_setup()
+    intg.parse()
+    intg.create_dataset()
+    intg.integrate_and_assemble()
+    intg.output()
+    intg.print_timings()
+
