@@ -15,10 +15,9 @@ def toFloat(val):
     except ValueError:
         return None
 
-
 class Script(object):
     def __init__(self):
-        self.usage = 'Usage: %prog <options> '
+        self.usage = "Usage: %prog <options>"
         self.description=""
         self.timings = []
 
