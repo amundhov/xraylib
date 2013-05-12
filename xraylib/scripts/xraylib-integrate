@@ -99,18 +99,15 @@ class Integrator(utils.Script):
     @utils.Script.timed
     def create_dataset(self):
         self.print_verbose("Creating dataset")
-        print(self.parameter_count)
 
         # FIXME remove once confirmed
         self.det = f2w.Perkin()
         self.det.setdist(900)
         self.det.setorigin(np.array([197.20642451, 211.88283919]))
         self.det.settilt(np.array([-0.18039263, 0.01076819]))
-        self.print_verbose("Integrating background (Veijo)")
         (two_theta, self.background_profile) = self.det.integrate(self.dark)
 
-        self.print_verbose("Final shape:", (2,) + tuple(self.parameter_count) + self.background_profile.shape,)
-        self.print_verbose("dtype", self.background_profile.dtype)
+        self.print_verbose("Data set size:", (2,) + tuple(self.parameter_count) + self.background_profile.shape,)
 
         self.hd5 = h5py.File(self.options.outfile)
         group = self.hd5.require_group(os.path.dirname(self.options.data_set))
