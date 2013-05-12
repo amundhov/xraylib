@@ -49,9 +49,6 @@ class Integrator(utils.Script):
         self.parser.add_option_group(input_group)
         self.parser.add_option_group(output_group)
 
-        self.parser.add_option("-f", "--fast",
-                          action="store_true", dest="fast_edf", default=False,
-                          help="Use fast data reading [edf only].")
         self.parser.add_option("--skip", dest="skip", default=0,
                           help="Skip processing x first diffraction patterns.",
                           metavar="x")
@@ -68,9 +65,10 @@ class Integrator(utils.Script):
         # FIXME sort files
         self.file_names = [ o for o in os.listdir(directory) if o.startswith(file_prefix) ]
 
-        # TODO write test
-        if self.options.fast_edf and not all([os.path.splitext(file_path)[1] == '.edf' for file_path in self.file_names]):
-            self.parser.error("Fast data reading only available for edf files")
+        if all([os.path.splitext(file_path)[1] == '.edf' for file_path in self.args]):
+            self.edf_only = True
+        else:
+            self.edf_only = False
 
         if len(self.options.data_set.split('/')) < 2:
             self.parser.error("Dataset should be on the form '/group_name/data_set'.")
@@ -127,7 +125,7 @@ class Integrator(utils.Script):
     @utils.Script.timed
     def integrate_and_assemble(self):
         self.print_verbose("Integrating ", len(self.parameters), "images")
-        if self.options.fast_edf:
+        if self.edf_only:
             edf_image = fabio.edfimage.edfimage().read(os.path.join(self.directory,self.file_names[0]))
         else:
             self.parser.error("Unimplemented")
