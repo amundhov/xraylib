@@ -25,7 +25,7 @@ class Calibration(utils.Script):
 
         file_group = optparse.OptionGroup(self.parser, "File options")
         file_group.add_option("-o", "--out", dest="outfile",
-                      help="Filename where calibration image is saved", metavar="FILE", default="calibration_image.edf")
+                      help="Filename where calibration image is saved", metavar="FILE")
         file_group.add_option("--data-set", dest="data_set",
                       help="Location to save data set.", metavar="STRING", default="/xraylib/calibration_image")
         file_group.add_option("-d", "--dark", dest="dark",
