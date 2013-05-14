@@ -47,6 +47,9 @@ class Calibration(utils.Script):
         calibration_group = optparse.OptionGroup(self.parser, "Calibration options")
         calibration_group.add_option("--threshold", dest="calibration_threshold",
                       help="Threshold value for use in calibration.", default=None)
+        calibration_group.add_option("--calibration_range", dest="calibration_range",
+                      metavar="min,max",
+                      help="Radial distance to use for .", default=None)
         #TODO Add r_min r_max threshold
 
         self.parser.add_option_group(file_group)

@@ -1,8 +1,12 @@
 import numpy as np
-import optparse,os, time
+import optparse,os, time, inspect
 
 import xraylib, fabio
 from xraylib import files
+
+def debug_print(**kwargs):
+    for name,var in kwargs.iteritems():
+        print('%s = %s' % (name,var,))
 
 def strip_none_values(dictionary):
     return dict([ (o,v) for o,v in dictionary.items() if v is not None])
