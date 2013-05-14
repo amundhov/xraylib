@@ -101,7 +101,7 @@ class Calibration(utils.Script):
             self.parser.error("pyFAI needed for PONI file")
         elif pyFAI is not None and self.options.poni_file:
             from pyFAI import geometry
-            g = geometry.Geometry(detector=self.options.detector_name)
+            g = geometry.Geometry()
             g.setFit2D(self.detector._distance, self.detector._origin[0]/self.detector._pixelsize[0], # mm -> pixel
                                            self.detector._origin[1]/self.detector._pixelsize[1], # mm -> pixel
                                         tilt=self.detector._tilt[0],
