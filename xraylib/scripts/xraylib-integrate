@@ -29,7 +29,7 @@ class Integrator(utils.Script):
         super(Integrator, self).parser_setup()
 
         input_group = optparse.OptionGroup(self.parser, "Input options")
-        input_group.add_option("--input-prefix", dest="input_path",
+        input_group.add_option("--data-prefix", dest="data_path",
                           metavar="/path/IMAGE_xyz_",
                           help="Integrate files starting with this path.")
         #input_group.add_option("--dark-prefix", dest="dark_prefix",
@@ -57,7 +57,10 @@ class Integrator(utils.Script):
     def parse(self):
         super(Integrator, self).parse()
 
-        (self.directory,file_prefix) = os.path.split(os.path.expanduser(self.options.input_path))
+        if not self.options.data_path:
+            self.parser.error("Please specify the prefix for your data files")
+
+        (self.directory,file_prefix) = os.path.split(os.path.expanduser(self.options.data_path))
         if self.directory == '':
             directory = '.'
         else:
