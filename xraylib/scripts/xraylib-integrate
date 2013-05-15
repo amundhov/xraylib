@@ -63,6 +63,7 @@ class Integrator(utils.Script):
         else:
             directory = self.directory
         # FIXME sort files
+        self.files = [ os.path.join(directory,o) for o in os.listdir(directory) if o.startswith(file_prefix) ]
         self.file_names = [ o for o in os.listdir(directory) if o.startswith(file_prefix) ]
 
         if all([os.path.splitext(file_path)[1] == '.edf' for file_path in self.args]):
@@ -122,23 +123,18 @@ class Integrator(utils.Script):
     @utils.Script.timed
     def integrate_and_assemble(self):
         self.print_verbose("Integrating ", len(self.parameters), "images")
-        if self.edf_only:
-            edf_image = fabio.edfimage.edfimage().read(os.path.join(self.directory,self.file_names[0]))
-        else:
-            self.parser.error("Unimplemented")
 
-        for i in xrange(0, len(self.parameters)):
+        i=0
+        for image in files.ImageSequence(self.files):
             index = self.parameters[i]-self.parameter_min
             self.print_verbose("Integrating ", self.file_names[i], index)
-            image = edf_image.fastReadData(os.path.join(self.directory,self.file_names[i]))
-            self.print_verbose("Veijo routine")
             (tth,result) = self.det.integrate(image)
             result = result - self.background_profile
-            #FIXME don't hardcode three parameters
-            self.dataset[0,index[0],index[1],index[2],:] = result.astype(np.float32)
+            self.dataset[(0,)+tuple(index)] = result.astype(np.float32)
             self.print_verbose("pyFAI")
             tth, I = self.integrator.xrpd_LUT(image, self.background_profile.shape[0], safe=False)
-            self.dataset[1,index[0],index[1],index[2],:] = I
+            self.dataset[(1,)+tuple(index)] = I
+            i=i+1
 
     @utils.Script.timed
     def output(self):
