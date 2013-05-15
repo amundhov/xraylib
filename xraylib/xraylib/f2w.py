@@ -99,7 +99,7 @@ class Detector(object):
        """
            N  - number of pies
            db - covariance matrix of
-
+           
            """
        D = self._distance; stp = 1; loops = 0; N = 36; dp = 2*pi/N; p = arange(N)*dp-dp/2;
        y = zeros([N,1]); z = zeros([N,1]); dy = zeros([N,1]); dz = zeros([N,1]);
@@ -115,11 +115,11 @@ class Detector(object):
              d = diff(A[:,j])/diff(r); C = vstack((A[:-1,j],d,d*r[:-1]**2/D)).T;
           y = y/dp; z = z/dp; dy = dy/dp**2; dz = dz/dp**2; C = vstack((cos(p),-sin(p))).T;
           w = (1/dy); Cs = (C*w[:,[0,0]]).T; db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,y));
-          stp = sum(c**2); q = c/stp; stp = stp/abs(dot(dot(q.T,db),q)); c.shape = 2;
+          stp = sqrt(sum(c**2)); q = c/stp; stp = stp/dot(dot(q.T,db),q); c.shape = 2;
           utils.debug_print(db=db, normalizer=dot(dot(q.T,db),q))
           self.setorigin(self._origin - c); C = vstack((cos(p),-sin(p))).T; w = (1/dz);
           Cs = (C*w[:,[0,0]]).T; db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,z));
-          stp2 = sum(c**2); q = c/stp2; stp2 = stp2/abs(dot(dot(q.T,db),q)); c.shape = 2;
+          stp2 = sqrt(sum(c**2)); q = c/stp2; stp2 = stp2/dot(dot(q.T,db),q); c.shape = 2;
 
           utils.debug_print(Cs=Cs,c=c,db=db,stp=stp,stp2=stp2)
 
