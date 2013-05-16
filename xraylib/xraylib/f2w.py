@@ -97,8 +97,9 @@ class Detector(object):
        j = nonzero(C); A[j] = A[j]/C[j]; return(A);
     def calibrate(self,Im,rg):
        """
-           N  - number of pies
-           db - covariance matrix of
+           N  - number of pies to integrate
+           db - covariance matrix of c, weighted for high q-counts and intensity statistics
+           rg - Range [mm] to use for calibration
            
            """
        D = self._distance; stp = 1; loops = 0; N = 36; dp = 2*pi/N; p = arange(N)*dp-dp/2;
@@ -113,17 +114,24 @@ class Detector(object):
              c = hstack((1,-y[j]))/b[0]; c.shape = [1,2]; dy[j] = dot(c,dot(db[[1,0],:][:,[1,0]],c.T));
              c = hstack((1,-z[j]))/b[0]; c.shape = [1,2]; dz[j] = dot(c,dot(db[[2,0],:][:,[2,0]],c.T));
              d = diff(A[:,j])/diff(r); C = vstack((A[:-1,j],d,d*r[:-1]**2/D)).T;
-          y = y/dp; z = z/dp; dy = dy/dp**2; dz = dz/dp**2; C = vstack((cos(p),-sin(p))).T;
-          w = (1/dy); Cs = (C*w[:,[0,0]]).T; db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,y));
+
+          y = y/dp; z = z/dp; dy = dy/dp**2; dz = dz/dp**2;
+
+          # Update origin
+          w = (1/dy);
+          C = vstack((cos(p),-sin(p))).T; Cs = (C*w[:,[0,0]]).T;
+          db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,y));
           stp = sqrt(sum(c**2)); q = c/stp; stp = stp/dot(dot(q.T,db),q); c.shape = 2;
-          utils.debug_print(db=db, normalizer=dot(dot(q.T,db),q))
-          self.setorigin(self._origin - c); C = vstack((cos(p),-sin(p))).T; w = (1/dz);
-          Cs = (C*w[:,[0,0]]).T; db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,z));
+          self.setorigin(self._origin - c);
+
+          # Update tilt
+          w = (1/dz);
+          C = vstack((cos(p),-sin(p))).T; Cs = (C*w[:,[0,0]]).T;
+          db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,z));
           stp2 = sqrt(sum(c**2)); q = c/stp2; stp2 = stp2/dot(dot(q.T,db),q); c.shape = 2;
+          self.settilt(self._tilt - c*180/pi);
 
-          utils.debug_print(Cs=Cs,c=c,db=db,stp=stp,stp2=stp2)
-
-          self.settilt(self._tilt - c*180/pi); stp = sqrt(stp+stp2); loops += 1;
+          stp = sqrt(stp+stp2); loops += 1;
           print("Step = {0:.3f}".format(stp[0,0]))
 
 class Pixium(Detector):
