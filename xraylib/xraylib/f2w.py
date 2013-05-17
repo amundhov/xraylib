@@ -109,7 +109,8 @@ class Detector(object):
           r,A = self.integrate(Im,N); i = nonzero((rg[0] < r)*(r < rg[1]))[0]; r = r[i,:]; A = A[i,:];
           d = diff(A[:,-1])/diff(r); C = vstack((A[:-1,-1],d,d*r[-1:]**2/D)).T;
           for j in range(N):
-             w = sc*r[:-1]/(A[:-1,j]+1); Cs = (C*w[:,[0,0,0]]).T; db = linalg.inv(dot(Cs,C));
+             w = sc*r[:-1]/(A[:-1,j]+self._bias); w[w<0] = 0;
+             Cs = (C*w[:,[0,0,0]]).T; db = linalg.inv(dot(Cs,C));
              b = dot(db,dot(Cs,A[:-1,j])); y[j] = b[1]/b[0]; z[j] = b[2]/b[0];
              c = hstack((1,-y[j]))/b[0]; c.shape = [1,2]; dy[j] = dot(c,dot(db[[1,0],:][:,[1,0]],c.T));
              c = hstack((1,-z[j]))/b[0]; c.shape = [1,2]; dz[j] = dot(c,dot(db[[2,0],:][:,[2,0]],c.T));
@@ -144,6 +145,7 @@ class Pixium(Detector):
        self._tilt      = [0,0]
        self._pixels    = [1920,2640]
        self._pixelsize = [0.154,0.154]
+       self._bias      = 3378.4108576774597 # Average dark current.
        super(Pixium,self).__init__(**kwargs)
 
 class Perkin(Detector):
@@ -154,6 +156,7 @@ class Perkin(Detector):
        self._tilt      = [0,0]
        self._pixels    = [2048,2048]
        self._pixelsize = [0.200,0.200]
+       self._bias      = 3378.4108576774597 # Average dark current.
        super(Perkin,self).__init__(**kwargs)
 
 def get_detector(name, **kwargs):
