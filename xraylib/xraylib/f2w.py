@@ -122,14 +122,14 @@ class Detector(object):
           w = (1/dy);
           C = vstack((cos(p),-sin(p))).T; Cs = (C*w[:,[0,0]]).T;
           db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,y));
-          stp = sqrt(sum(c**2)); q = c/stp; stp = stp/dot(dot(q.T,db),q); c.shape = 2;
+          stp = sum(c**2); q = c/sqrt(stp); stp = stp/dot(dot(q.T,db),q); c.shape = 2;
           self.setorigin(self._origin - c);
 
           # Update tilt
           w = (1/dz);
           C = vstack((cos(p),-sin(p))).T; Cs = (C*w[:,[0,0]]).T;
           db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,z));
-          stp2 = sqrt(sum(c**2)); q = c/stp2; stp2 = stp2/dot(dot(q.T,db),q); c.shape = 2;
+          stp2 = sum(c**2); q = c/sqrt(stp2); stp2 = stp2/dot(dot(q.T,db),q); c.shape = 2;
           self.settilt(self._tilt - c*180/pi);
 
           stp = sqrt(stp+stp2); loops += 1;
