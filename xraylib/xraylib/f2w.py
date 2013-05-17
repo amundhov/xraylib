@@ -105,7 +105,7 @@ class Detector(object):
        D = self._distance; stp = 1; loops = 0; N = 36; dp = 2*pi/N; p = arange(N)*dp-dp/2;
        y = zeros([N,1]); z = zeros([N,1]); dy = zeros([N,1]); dz = zeros([N,1]);
        sc = 2*pi/(sqrt(self._pixelsize[0]*self._pixelsize[1])*N);
-       while ((0.1 < stp) and (loops < 30)):
+       while ((0.001 < stp) and (loops < 30)):
           r,A = self.integrate(Im,N); i = nonzero((rg[0] < r)*(r < rg[1]))[0]; r = r[i,:]; A = A[i,:];
           d = diff(A[:,-1])/diff(r); C = vstack((A[:-1,-1],d,d*r[-1:]**2/D)).T;
           for j in range(N):
