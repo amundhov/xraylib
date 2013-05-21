@@ -95,13 +95,17 @@ class Detector(object):
        ta = diff(hstack((0,c0[i]))); tc = diff(hstack((0,w0[i]))); j = ir[i]; A[j,0] = ta; C[j,0] = tc;
        ta = diff(hstack((0,c1[i]))); tc = diff(hstack((0,w1[i]))); j += 1; A[j,0] += ta; C[j,0] += tc;
        j = nonzero(C); A[j] = A[j]/C[j]; return(A);
-    def calibrate(self,Im,rg):
+    def calibrate(self,Im,rg, drk=None):
        """
            N  - number of pies to integrate
            db - covariance matrix of c, weighted for high q-counts and intensity statistics
            rg - Range [mm] to use for calibration
            
            """
+
+       if drk is not None:
+           self._bias = drk.mean()
+           Im = Im - drk
        D = self._distance; stp = 1; loops = 0; N = 36; dp = 2*pi/N; p = arange(N)*dp-dp/2;
        y = zeros([N,1]); z = zeros([N,1]); dy = zeros([N,1]); dz = zeros([N,1]);
        sc = 2*pi/(sqrt(self._pixelsize[0]*self._pixelsize[1])*N);
