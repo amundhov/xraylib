@@ -49,9 +49,13 @@ class Integrator(utils.Script):
         self.parser.add_option_group(input_group)
         self.parser.add_option_group(output_group)
 
-        self.parser.add_option("--skip", dest="skip", default=0,
-                          help="Skip processing x first diffraction patterns.",
+        # TODO make sure reshaping the output file is done correctly
+        self.parser.add_option("--skip", dest="skip_file",
+                          help="Skip processing to file x.",
                           metavar="x")
+        self.parser.add_option("--disable-gpu",
+                          action="store_true", dest="disable_gpu", default=False,
+                          help="Disable GPU for integration.")
 
     @utils.Script.timed
     def parse(self):
@@ -131,11 +135,19 @@ class Integrator(utils.Script):
         for image in files.ImageSequence(self.files):
             index = self.parameters[i]-self.parameter_min
             self.print_verbose("Integrating ", self.file_names[i], index)
-            (tth,result) = self.det.integrate(image)
+            (tth,result) = self.det.integrate(image,)
             result = result - self.background_profile
             self.dataset[(0,)+tuple(index)] = result.astype(np.float32)
             self.print_verbose("pyFAI")
-            tth, I = self.integrator.xrpd_LUT(image, self.background_profile.shape[0], safe=False)
+            if not self.options.disable_gpu:
+                tth, I = self.integrator.xrpd_LUT_OCL(
+                            image-self.dark,
+                            self.background_profile.shape[0],
+                            safe=False,
+                            devicetype="gpu")
+            else:
+                tth, I = self.integrator.xrpd_LUT(image-self.dark, self.background_profile.shape[0], safe=False)
+
             self.dataset[(1,)+tuple(index)] = I
             i=i+1
 
