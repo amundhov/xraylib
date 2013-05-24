@@ -97,9 +97,14 @@ class Detector(object):
        j = nonzero(C); A[j] = A[j]/C[j]; return(A);
     def calibrate(self,Im,rg, drk=None):
        """
-           N  - number of pies to integrate
-           db - covariance matrix of c, weighted for high q-counts and intensity statistics
-           rg - Range [mm] to use for calibration
+           Im  : Raw Image to use for calibration.
+           rg  : Region (min,max) in mm to include in calibration.
+           drk : If provided, the dark current image will be subtracted
+                 from the raw image and its variance added to the error statistics.
+
+           N   - number of pies to integrate
+           db  - covariance matrix of c, weighted for high q-counts and intensity statistics
+           rg  - Range [mm] to use for calibration
            
            """
 
