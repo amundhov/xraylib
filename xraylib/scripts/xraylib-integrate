@@ -111,8 +111,8 @@ class Integrator(utils.Script):
         # FIXME remove once confirmed
         self.det = f2w.Perkin()
         self.det.setdist(900)
-        self.det.setorigin(np.array([197.20642451, 211.88283919]))
-        self.det.settilt(np.array([-0.18039263, 0.01076819]))
+        self.det.setorigin(np.array([197.2052035 ,  211.88159321]))
+        self.det.settilt(np.array([-0.17446037,  0.01906504]))
         (two_theta, self.background_profile) = self.det.integrate(self.dark)
 
         self.print_verbose("Data set size:", (2,) + tuple(self.parameter_count) + self.background_profile.shape,)
