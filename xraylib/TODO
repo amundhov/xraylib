@@ -1,6 +1,5 @@
  - Rename xraylib.files -> xraylib.io
           ImageSequence -> Images
- - Debug negative sqrt. Prinfts, negative covariance? Power of three
  - Remove any "unecessary options"
  - Addapt scripts to take parameters from DAWN. Provide example workflows
 
