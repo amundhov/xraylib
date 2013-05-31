@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+
+import numpy as np
+import os, optparse, h5py, fabio
+
+import xraylib
+from xraylib import f2w, files, utils
+
+class Assembler(utils.Script):
+    def __init__(self):
+        super(Assembler, self).__init__()
+        self.description = """
+        """
+
+    def parser_setup(self):
+        super(Assembler, self).parser_setup()
+
+        input_group = optparse.OptionGroup(self.parser, "Input options")
+        input_group.add_option("--position", dest="peak_position",
+                          help="Peak channel position")
+        input_group.add_option("--fwhm", dest="peak_fwhm",
+                          help="Peak FWHM full width at half maximum")
+        input_group.add_option("--shape", dest="peak_shape",
+                          help="Peak shape. [gaussian|delta]", default='gaussian')
+
+
+        output_group = optparse.OptionGroup(self.parser, "Output options")
+        output_group.add_option("-o", "--out", dest="outfile",
+                          help="File to save sinogram.", metavar="FILE", default="sinogram.h5")
+        output_group.add_option("--data-set", dest="data_set",
+                          help="Location to save data set.", metavar="STRING", default=None)
+
+        self.parser.add_option_group(input_group)
+        self.parser.add_option_group(output_group)
+
+    @utils.Script.timed
+    def parse(self):
+        super(Assembler, self).parse()
+
+        if len(self.args) == 1 and os.path.exists(self.args[0]):
+            self.input_data = files.ImageFile(self.args[0]).getImage(self.options.data_set)
+        else:
+            self.parser.error("Could not open input file")
+
+        if not self.options.data_set:
+            self.data_set = 'xraylib/sinogram_%s'  % (self.options.peak_position,)
+        else:
+            self.data_set = self.options.data_set
+
+        print self.input_data.shape
+
+        self.out_file = h5py.File(self.options.outfile)
+        group = self.out_file.require_group(os.path.dirname(self.data_set))
+        #self.dataset = group.require_dataset(
+        #                   name=os.path.basename(self.options.data_set),
+        #                   shape=input_data,
+        #                   chunks=tuple(self.parameter_count),
+        #                   dtype="float32"
+        #                )
+
+
+    @utils.Script.timed
+    def assemble(self):
+        super(Assembler, self).parse()
+
+    @utils.Script.timed
+    def output(self):
+        self.out_file.close()
+
+if __name__ == '__main__':
+    assmbl = Assembler()
+
+    assmbl.parser_setup()
+    assmbl.parse()
+    assmbl.assemble()
+    assmbl.output()
