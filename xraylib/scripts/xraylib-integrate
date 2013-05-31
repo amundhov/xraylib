@@ -43,8 +43,6 @@ class Integrator(utils.Script):
         output_group = optparse.OptionGroup(self.parser, "Output options")
         output_group.add_option("-o", "--out", dest="outfile",
                           help="File to save integrated dataset.", metavar="FILE", default="sinogram.h5")
-        output_group.add_option("--data-set", dest="data_set",
-                          help="Location to save data set.", metavar="STRING", default="/xraylib/sinogram")
 
         self.parser.add_option_group(input_group)
         self.parser.add_option_group(output_group)
@@ -77,9 +75,6 @@ class Integrator(utils.Script):
             self.edf_only = True
         else:
             self.edf_only = False
-
-        if len(self.options.data_set.split('/')) < 2:
-            self.parser.error("Dataset should be on the form '/group_name/data_set'.")
 
         self.parameters = [ [int(parm) for parm in os.path.splitext(o)[0].split('_')[1:]] for o in self.file_names ]
         parametersT = np.array(self.parameters).T
