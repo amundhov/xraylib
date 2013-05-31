@@ -20,7 +20,10 @@ class ImageFile:
         if self.extension == '.h5':
             import h5py
             with h5py.File(self.file_path) as f:
-                self.image = f[self.data_set].value
+                try:
+                    self.image = f[data_set].value
+                except KeyError:
+                    raise KeyError('Data set %s does not exist' % (data_set,))
         else:
             import fabio
             self.image = fabio.openimage.openimage(self.file_path).data
