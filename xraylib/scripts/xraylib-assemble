@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 
 import numpy as np
-import os, optparse, h5py, fabio
+import os, optparse, itertools
+import h5py, fabio
 
 import xraylib
-from xraylib import f2w, files, utils
+from xraylib import f2w, files, utils, fit
 
 class Assembler(utils.Script):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(Assembler, self).__init__()
         self.description = """
         """
+        self.peak = {}
+        self.peak.update(kwargs)
 
     def parser_setup(self):
         super(Assembler, self).parser_setup()
@@ -22,12 +25,16 @@ class Assembler(utils.Script):
                           help="Peak FWHM full width at half maximum")
         input_group.add_option("--shape", dest="peak_shape",
                           help="Peak shape. [gaussian|delta]", default='gaussian')
+        input_group.add_option("--peak-file", dest="peak_file",
+                          help="Exported peak from DAWN.", metavar="FILE")
+        input_group.add_option("--input-set", dest="input_set",
+                          help="Override data set [default /xraylib/diff_tomo].", metavar="STRING", default="/xraylib/diff_tomo")
 
 
         output_group = optparse.OptionGroup(self.parser, "Output options")
         output_group.add_option("-o", "--out", dest="outfile",
                           help="File to save sinogram.", metavar="FILE", default="sinogram.h5")
-        output_group.add_option("--data-set", dest="data_set",
+        output_group.add_option("--data-set", dest="output_set",
                           help="Location to save data set.", metavar="STRING", default=None)
 
         self.parser.add_option_group(input_group)
@@ -37,31 +44,80 @@ class Assembler(utils.Script):
     def parse(self):
         super(Assembler, self).parse()
 
+        #   Parse input and output files/datasets, peak shapes
+
         if len(self.args) == 1 and os.path.exists(self.args[0]):
-            self.input_data = files.ImageFile(self.args[0]).getImage(self.options.data_set)
+            self.input_data = files.ImageFile(self.args[0]).getImage(self.options.input_set)
+            self.output_shape = self.input_data.shape[:-1]
         else:
             self.parser.error("Could not open input file")
 
-        if not self.options.data_set:
-            self.data_set = 'xraylib/sinogram_%s'  % (self.options.peak_position,)
+        if not self.options.output_set:
+            self.output_set = 'xraylib/sinogram_%s'  % (self.options.peak_position,)
         else:
-            self.data_set = self.options.data_set
+            self.output_set = self.options.output_set
 
-        print self.input_data.shape
+        self.peak = {
+                'fwhm'     : self.options.peak_fwhm,
+                'position' : self.options.peak_position,
+                'shape'    : self.options.peak_shape
+        }
+
+        # Get peak options from dat file exported by DAWN
+        if self.options.peak_file:
+            with open(self.options.peak_file, 'rb') as f:
+                try:
+                    (header,data) = f.readlines()
+                    assert('#' in header)
+                    header = header[1:].strip().lower().split('\t')
+                    data = map(float,data.split('\t'))
+                    self.peak.update(zip(header,data))
+                except:
+                    self.parser.error("Could not parse peak file %s" % (self.options.peak_file,))
+
 
         self.out_file = h5py.File(self.options.outfile)
-        group = self.out_file.require_group(os.path.dirname(self.data_set))
-        #self.dataset = group.require_dataset(
-        #                   name=os.path.basename(self.options.data_set),
-        #                   shape=input_data,
-        #                   chunks=tuple(self.parameter_count),
-        #                   dtype="float32"
-        #                )
+        self.out_group = self.out_file.require_group(os.path.dirname(self.output_set))
+        self.output_data = self.out_group.require_dataset(
+                           name=os.path.basename(self.output_set),
+                           shape=tuple(self.output_shape),
+                           #chunks=tuple(self.,   self.input_data.shape[-1]),
+                           dtype="float32"
+        )
 
 
     @utils.Script.timed
     def assemble(self):
-        super(Assembler, self).parse()
+        """ Do weighted least squares fitting of peak shape
+        to linear background using data in interval of three FWHM. """
+        r_min = int(np.round(self.peak['position'] - 1.5*self.peak['fwhm']))
+        r_max = int(np.round(self.peak['position'] + 1.5*self.peak['fwhm']))
+        r = np.arange(r_min,r_max)
+
+
+        peak_fun = fit.get_peak_function(**self.peak)
+
+        self.output_peaks = self.out_group.require_dataset(
+                           name=os.path.basename(self.output_set)+'_peaks',
+                           shape=tuple(self.output_shape) + (2,r.size,),
+                           #chunks=tuple(self.,   self.input_data.shape[-1]),
+                           dtype="float32"
+        )
+
+        A = np.array([np.ones(r.size), r, peak_fun(r)])
+
+        ''' Fit peaks for sinogram. Last dimension is assumed
+            to be the integrated diffraction profile '''
+        for key in itertools.product(*map(xrange,self.input_data.shape[:-1])):
+            signal = self.input_data[key][r_min:r_max]
+            w = 1.0 / (signal+1) # Use signal as squared error. dy ~ sqrt(y) FIXME get bias
+            B = A * np.array([w,w,w])
+            covC = np.linalg.inv(np.dot(B,A.T))
+            c = np.dot(np.dot(covC, B), signal)
+            self.output_data[key] = c[2]
+
+            self.output_peaks[key+(0,)] = signal
+            self.output_peaks[key+(1,)] = np.dot(A.T,c)
 
     @utils.Script.timed
     def output(self):
@@ -74,3 +130,7 @@ if __name__ == '__main__':
     assmbl.parse()
     assmbl.assemble()
     assmbl.output()
+else:
+    pass
+    # Initialize assmbl with values from DAWN
+    # assmbl = Assembler(position=.., fwhm = ..., shape="gaussian")
