@@ -108,16 +108,16 @@ class Integrator(utils.Script):
         self.det.setdist(900)
         self.det.setorigin(np.array([197.2052035 ,  211.88159321]))
         self.det.settilt(np.array([-0.17446037,  0.01906504]))
-        (two_theta, self.background_profile) = self.det.integrate(self.dark)
+        (two_theta, self.darkcurrent_profile) = self.det.integrate(self.dark)
 
-        self.print_verbose("Data set size:", (2,) + tuple(self.parameter_count) + self.background_profile.shape,)
+        self.print_verbose("Data set size:", (2,) + tuple(self.parameter_count) + self.darkcurrent_profile.shape,)
 
         self.hd5 = h5py.File(self.options.outfile)
         group = self.hd5.require_group(os.path.dirname(self.options.data_set))
         self.dataset = group.require_dataset(
                            name=os.path.basename(self.options.data_set),
                            # FIXME remove (2,) when done testing
-                           shape=(2,) + tuple(self.parameter_count) + self.background_profile.shape,
+                           shape=(2,) + tuple(self.parameter_count) + self.darkcurrent_profile.shape,
                            chunks=(2,) + tuple(self.parameter_count) + (1,),
                            dtype="float32"
                         )
@@ -131,17 +131,17 @@ class Integrator(utils.Script):
             index = self.parameters[i]-self.parameter_min
             self.print_verbose("Integrating ", self.file_names[i], index)
             (tth,result) = self.det.integrate(image,)
-            result = result - self.background_profile
+            result = result - self.darkcurrent_profile
             self.dataset[(0,)+tuple(index)] = result.astype(np.float32)
             self.print_verbose("pyFAI")
             if not self.options.disable_gpu:
                 tth, I = self.integrator.xrpd_LUT_OCL(
                             image-self.dark,
-                            self.background_profile.shape[0],
+                            self.darkcurrent_profile.shape[0],
                             safe=False,
                             devicetype="gpu")
             else:
-                tth, I = self.integrator.xrpd_LUT(image-self.dark, self.background_profile.shape[0], safe=False)
+                tth, I = self.integrator.xrpd_LUT(image-self.dark, self.darkcurrent_profile.shape[0], safe=False)
 
             self.dataset[(1,)+tuple(index)] = I
             i=i+1
