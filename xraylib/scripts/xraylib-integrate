@@ -11,6 +11,7 @@ try:
 except ImportError:
     pyFAI = None
 
+DARKCURRENT_DATA_SET = '/xraylib/darkcurrent'
 
 class Integrator(utils.Script):
     def __init__(self):
@@ -96,7 +97,8 @@ class Integrator(utils.Script):
 
         if os.path.exists(self.options.dark):
             self.dark = files.ImageFile(self.options.dark).getImage()
-            self.integrator.darkcurrent = self.dark
+            # FIXME pyFAI doesn't subtract darkcurrent as of june 2013
+            #self.integrator.darkcurrent = self.dark 
 
 
     @utils.Script.timed
@@ -121,6 +123,12 @@ class Integrator(utils.Script):
                            chunks=(2,) + tuple(self.parameter_count) + (1,),
                            dtype="float32"
                         )
+        darkcurrent = group.require_dataset(
+                           name=DARKCURRENT_DATA_SET,
+                           shape=self.darkcurrent_profile.shape,
+                           dtype="float32"
+        )
+        darkcurrent[:] = self.darkcurrent_profile
 
     @utils.Script.timed
     def integrate_and_assemble(self):
