@@ -100,7 +100,7 @@ class Integrator(utils.Script):
         else:
             self.parser.error("Need poni file to set up Azimuthal integrator.")
 
-        if os.path.exists(self.options.dark):
+        if self.options.dark and os.path.exists(self.options.dark):
             self.dark = files.ImageFile(self.options.dark).getImage()
             # FIXME pyFAI doesn't subtract darkcurrent as of june 2013
             #self.integrator.darkcurrent = self.dark 
