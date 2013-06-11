@@ -11,8 +11,6 @@ try:
 except ImportError:
     pyFAI = None
 
-DARKCURRENT_DATA_SET = '/xraylib/darkcurrent'
-
 class Integrator(utils.Script):
     def __init__(self):
         super(Integrator, self).__init__()
@@ -129,7 +127,7 @@ class Integrator(utils.Script):
                            dtype="float32"
                         )
         darkcurrent = group.require_dataset(
-                           name=DARKCURRENT_DATA_SET,
+                           name=xraylib.DARKCURRENT_DATA_SET,
                            shape=self.darkcurrent_profile.shape,
                            dtype="float32"
         )

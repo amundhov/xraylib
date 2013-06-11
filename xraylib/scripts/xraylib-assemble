@@ -48,6 +48,7 @@ class Assembler(utils.Script):
 
         if len(self.args) == 1 and os.path.exists(self.args[0]):
             self.input_data = files.ImageFile(self.args[0]).getImage(self.options.input_set)
+            self.darkcurrent_profile = files.ImageFile(self.args[0]).getImage(xraylib.DARKCURRENT_DATA_SET)
             self.output_shape = self.input_data.shape[:-1]
         else:
             self.parser.error("Could not open input file")
@@ -105,12 +106,14 @@ class Assembler(utils.Script):
         )
 
         A = np.array([np.ones(r.size), r, peak_fun(r)])
+        darkcurrent = self.darkcurrent_profile[r_min:r_max]
 
         ''' Fit peaks for sinogram. Last dimension is assumed
             to be the integrated diffraction profile '''
         for key in itertools.product(*map(xrange,self.input_data.shape[:-1])):
             signal = self.input_data[key][r_min:r_max]
-            w = 1.0 / (signal+1) # Use signal as squared error. dy ~ sqrt(y) FIXME get bias
+            # Use signal as squared error. dy ~ sqrt(y)
+            w = 1.0 / (signal+darkcurrent)
             B = A * np.array([w,w,w])
             covC = np.linalg.inv(np.dot(B,A.T))
             c = np.dot(np.dot(covC, B), signal)

@@ -30,7 +30,6 @@ class ImageFile:
         return self.image
 
     def saveImage(self, image, data_set='/xraylib/image'):
-        """ TODO: implement me """
         if self.extension == '.h5':
             import h5py
             with h5py.File(self.file_path) as f:
