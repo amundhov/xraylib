@@ -55,6 +55,9 @@ class Integrator(utils.Script):
         self.parser.add_option("--disable-gpu",
                           action="store_true", dest="disable_gpu", default=False,
                           help="Disable GPU for integration.")
+        self.parser.add_option("--disable-fast-edf",
+                          action="store_true", dest="disable_fast_edf", default=False,
+                          help="Disable fast reading of EDF data.")
 
     @utils.Script.timed
     def parse(self):
@@ -69,11 +72,15 @@ class Integrator(utils.Script):
         else:
             directory = self.directory
         # FIXME sort files
-        self.files = [ os.path.join(directory,o) for o in os.listdir(directory) if o.startswith(file_prefix) ]
+        self.files = [os.path.join(directory,o) for 
+                       o in os.listdir(directory) if o.startswith(file_prefix)]
         self.file_names = [ o for o in os.listdir(directory) if o.startswith(file_prefix) ]
 
-        if all([os.path.splitext(file_path)[1] == '.edf' for file_path in self.args]):
+        if ( all([os.path.splitext(file_path)[1] == '.edf'
+                for file_path in self.args]) and
+                not self.options.disable_fast_edf):
             self.edf_only = True
+            self.print_verbose('Using fast EDF data reading')
         else:
             self.edf_only = False
 
