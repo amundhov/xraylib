@@ -94,7 +94,7 @@ class Integrator(utils.Script):
         if len(self.options.data_set.split('/')) < 2:
             self.parser.error("Dataset should be on the form '/group_name/data_set'.")
 
-        self.parameters = [ [int(parm) for parm in os.path.splitext(o)[0].split('_')[1:]] for o in self.file_names ]
+        self.parameters = [ [int(parm) for parm in os.path.splitext(o)[0].split(file_prefix)[1].split('_')[1:]] for o in self.file_names ]
         parametersT = np.array(self.parameters).T
 
         self.number_of_parameters = parametersT.shape[0]
