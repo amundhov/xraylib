@@ -77,21 +77,23 @@ class Detector(object):
            self._nR = i[self._jind]*self._dr;
            self._dcj = diff(hstack((0,n[self._jind])))
     def integrate(self,Im,n=1):
-       if (not self._updated):
-          self._calcrt();
-       Imc = Im[:]; Imc.shape = prod(Imc.shape);
-       if n>1:
-           R = self._R[:]; T = self._T[:]; dr = self._dr;
-           tpi = 2.0*pi; dp = tpi/n; ip = int_(floor(T/dp+0.5)%n); A = zeros([0,n]);
-           for i in range(n):
-              j = nonzero(ip == i); a = self._pie(Imc[j],R[j],dr); M = a.shape[0]; m = A.shape[0];
-              if (m < M):
-                 A = vstack((A,zeros([M-m,n])))
-              a.shape = M; A[:M,i] = a;
-       else:
-           A = zeros(self._nR.shape); c = Imc[self._Rind].cumsum()[self._jind];
-           A[0] = c[0]; A[1:] = diff(c); A = A/self._dcj;
-       return(self._nR,A);
+        if Im.shape != tuple(self._pixels):
+            raise Exception("Diffraction image does not match detector resolution.")
+        if (not self._updated):
+           self._calcrt();
+        Imc = Im[:]; Imc.shape = prod(Imc.shape);
+        if n>1:
+            R = self._R[:]; T = self._T[:]; dr = self._dr;
+            tpi = 2.0*pi; dp = tpi/n; ip = int_(floor(T/dp+0.5)%n); A = zeros([0,n]);
+            for i in range(n):
+               j = nonzero(ip == i); a = self._pie(Imc[j],R[j],dr); M = a.shape[0]; m = A.shape[0];
+               if (m < M):
+                  A = vstack((A,zeros([M-m,n])))
+               a.shape = M; A[:M,i] = a;
+        else:
+            A = zeros(self._nR.shape); c = Imc[self._Rind].cumsum()[self._jind];
+            A[0] = c[0]; A[1:] = diff(c); A = A/self._dcj;
+        return(self._nR,A);
 
     def _pie(self,Im,R,dr):
        mn = prod(Im.shape); j = R.argsort(axis=None); w = R[j]/dr;
