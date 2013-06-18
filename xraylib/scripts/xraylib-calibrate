@@ -23,13 +23,14 @@ class Calibration(utils.Script):
     def parser_setup(self):
         super(Calibration, self).parser_setup()
 
+        self.parser.add_option("--pixels", dest="pixels",
+                          action="store_true", default=False,
+                          help="Origin and calibration limits in pixels instead of mm.")
         file_group = optparse.OptionGroup(self.parser, "File options")
         file_group.add_option("-o", "--out", dest="outfile",
                       help="Filename where calibration image is saved", metavar="FILE")
         file_group.add_option("--data-set", dest="data_set",
-                      help="Location to save data set.", metavar="STRING", default="/xraylib/calibration_image")
-        file_group.add_option("-d", "--dark", dest="dark",
-                      help="list of dark images to average and subtract", default=None)
+                     help="Location to save data set.", metavar="STRING", default=xraylib.CALIBRATION_IMAGE)
         file_group.add_option("-p", "--poni", dest="poni_file",
                       help="File to save detector geometry", metavar="FILE", default="geometry.poni")
 
@@ -38,19 +39,17 @@ class Calibration(utils.Script):
                       help="Detector name", default=None)
         detector_group.add_option("--distance", dest="detector_distance",
                       help="Detector distance from sample", metavar="<distance> [mm]",default=None)
+        detector_group.add_option("--binning", dest="detector_binning",
+                      help="Number of pixels that detector is set to group.", metavar="<count>",default=None)
         detector_group.add_option ('--tilt', dest="detector_tilt", nargs=2, action='append',
                       help="", metavar="<tilt1> <tilt2> [degrees]", default=None)
         detector_group.add_option ('--origin', dest="detector_origin", nargs=2, action='append',
-                      help="Detector origin wrt sample, also known as PONI (Point of normal incidence)",
-                      metavar="<poni1> <poni2> [mm]", default=None)
+                      help="Detector origin wrt sample",
+                      metavar="<x> <y> [mm]", default=None)
 
         calibration_group = optparse.OptionGroup(self.parser, "Calibration options")
-        calibration_group.add_option("--threshold", dest="calibration_threshold",
-                      help="Threshold value for use in calibration.", default=None)
-        calibration_group.add_option("--calibration_range", dest="calibration_range",
-                      metavar="min,max",
-                      help="Radial distance to use for .", default=None)
-        #TODO Add r_min r_max threshold
+        calibration_group.add_option ('--limits', dest="limits", nargs=2, action='append',
+                      metavar="<lower> <upper>", help="Radial distance [mm] to use for calibration.", default=None)
 
         self.parser.add_option_group(file_group)
         self.parser.add_option_group(detector_group)
@@ -66,36 +65,48 @@ class Calibration(utils.Script):
         # Set up self.detector
         DETECTOR_KWARGS = {
                 'distance': self.options.detector_distance,
+                'binning' : self.options.detector_binning,
                 'origin'  : self.options.detector_origin,
                 'tilt'    : self.options.detector_tilt,
         }
 
         if self.options.detector_name is not None:
             DETECTOR_KWARGS = utils.strip_none_values(DETECTOR_KWARGS)
+            DETECTOR_KWARGS = utils.flatten(DETECTOR_KWARGS)
+            DETECTOR_KWARGS = utils.convert(DETECTOR_KWARGS,float)
             self.detector = f2w.get_detector(self.options.detector_name, **DETECTOR_KWARGS)
+
+            if self.options.pixels and 'origin' in DETECTOR_KWARGS:
+                self.detector.setorigin(list(np.multiply(self.detector._origin,self.detector._pixelsize)))
+
         else:
             self.parser.error("self.detector missing")
 
-        calibration_image = files.ImageFile(self.args[0]).getImage()
+        self.calibration_image = files.ImageFile(self.args[0]).getImage()
 
-        if self.options.dark:
-            # FIXME allow files to be arguments, not comma separated list
+        if len(self.args) > 1:
             self.print_verbose("---> Averaging dark images")
-            dark_current = files.averageImages(self.options.dark.split(","))
-            calibration_image = calibration_image - dark_current
+            self.dark_current = files.averageImages(self.args[1:])
+        else:
+            self.dark_current = None
 
         if self.options.outfile:
             self.print_verbose('---> Saving %s' % (self.options.outfile,))
             f = files.ImageFile(self.options.outfile)
             f.saveImage(calibration_image, self.options.data_set)
 
-        self.calibrator = f2w.Calibrator(calibration_image, self.detector)
+        self.calibrator = f2w.Calibrator(self.calibration_image, self.dark_current, self.detector)
 
-        CALIBRATION_KWARGS = {
-                'threshold': self.options.calibration_threshold,
+        self.CALIBRATION_KWARGS = {
+                'limits' : self.options.limits
         }
-        self.CALIBRATION_KWARGS = utils.strip_none_values(CALIBRATION_KWARGS)
+        self.CALIBRATION_KWARGS = utils.strip_none_values(self.CALIBRATION_KWARGS)
+        self.CALIBRATION_KWARGS = utils.flatten(self.CALIBRATION_KWARGS)
+        self.CALIBRATION_KWARGS = utils.convert(self.CALIBRATION_KWARGS,float)
+        if self.options.pixels and 'limits' in self.CALIBRATION_KWARGS:
+            self.CALIBRATION_KWARGS['limits'] = list(np.multiply(self.CALIBRATION_KWARGS['limits'],self.detector._pixelsize))
 
+    @utils.Script.timed
     def calibrate(self):
         self.print_verbose("---> Calibrating")
         self.calibrator.calibrate(**self.CALIBRATION_KWARGS)
@@ -119,6 +130,5 @@ if __name__ == "__main__":
     cal = Calibration()
     cal.parser_setup()
     cal.parse()
-    # TODO: while loop where integration limits and threshold can be adjusted
     cal.calibrate()
 
