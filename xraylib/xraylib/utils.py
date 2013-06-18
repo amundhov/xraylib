@@ -1,4 +1,3 @@
-import __builtin__
 import numpy as np
 import optparse,os, time, inspect
 
@@ -15,6 +14,10 @@ def strip_none_values(dictionary):
 def flatten(val):
     if type(val) == dict:
         return dict([ (o,flatten(v)) for o,v in val.items()])
+
+    if hasattr(val, '__iter__') and len(val) == 1:
+        return val[0]
+
     if hasattr(val, '__iter__'):
         flat_list = []
         for item in val:
@@ -29,17 +32,12 @@ def flatten(val):
 def convert(val,val_type):
     if type(val) == dict:
         return dict([ (o,convert(v,val_type),) for o,v in val.items() ])
-    if type(val) == list:
+    if hasattr(val, '__iter__'):
         return [ convert(o,val_type) for o in val ]
     try:
-        function = __builtin__.__dict__[val_type]
-        return function(str(val).strip())
+        return val_type(str(val).strip())
     except ValueError:
         return None
-
-def toFloat(val):
-    """ TODO Add tests """
-    return [ convert(flat,'float') for flat in flatten(val) ]
 
 class Script(object):
     def __init__(self):
