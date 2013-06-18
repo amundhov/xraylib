@@ -164,7 +164,6 @@ class Integrator(utils.Script):
         intg_thread = threading.Thread(target=intg.integrate_files)
         load_thread = threading.Thread(target=intg.load_files)
 
-        intg_thread.setDaemon(True)
         load_thread.setDaemon(True)
 
         intg_thread.start()
@@ -172,13 +171,12 @@ class Integrator(utils.Script):
 
         while(not self.finished and not self.abort):
             try:
-                load_thread.join(2)
                 intg_thread.join(2)
             except KeyboardInterrupt:
                 self.abort = True
 
-        if self.abort:
-            sys.exit(1)
+        # Wait for integration thread to finish in case of aborting.
+        intg_thread.join()
 
     def load_files(self):
         for image in files.ImageSequence(self.files):
@@ -186,6 +184,8 @@ class Integrator(utils.Script):
 
     def integrate_files(self):
         for i in xrange(0,len(self.files)):
+            if self.abort:
+                return
             self.print_verbose("Integrating ", self.file_names[i])
             self.integrate_single_file(i, self.image_queue.get())
             self.image_queue.task_done()
@@ -194,7 +194,7 @@ class Integrator(utils.Script):
     def integrate_single_file(self,file_number, image):
         index = self.parameters[file_number]-self.parameter_min
         self.print_verbose("Index ", index)
-        (tth,result) = self.det.integrate(image,)
+        (tth,result) = self.det.integrate(image)
         result = result - self.darkcurrent_profile
         self.dataset[(0,)+tuple(index)] = result.astype(np.float32)
         if not self.disable_gpu:
