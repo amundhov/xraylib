@@ -114,16 +114,16 @@ class Detector(object):
            N   - number of pies to integrate
            db  - covariance matrix of c, weighted for high q-counts and intensity statistics
            rg  - Range [mm] to use for calibration
-           
-           """
+        """
 
        if drk is not None:
            self._bias = drk.mean()
            Im = Im - drk
-       D = self._distance; stp = 1; loops = 0; N = 36; dp = 2*pi/N; p = arange(N)*dp-dp/2;
+       iterations = 0; full_iterations = 0;
+       D = self._distance; stp = 1;  N = 36; dp = 2*pi/N; p = arange(N)*dp-dp/2;
        y = zeros([N,1]); z = zeros([N,1]); dy = zeros([N,1]); dz = zeros([N,1]);
        sc = 2*pi/(sqrt(self._pixelsize[0]*self._pixelsize[1])*N);
-       while ((0.001 < stp) and (loops < 30)):
+       while (0.001 < stp and full_iterations < 40):
           r,A = self.integrate(Im,N); i = nonzero((rg[0] < r)*(r < rg[1]))[0]; r = r[i,:]; A = A[i,:];
           d = diff(A[:,-1])/diff(r); C = vstack((A[:-1,-1],d,d*r[-1:]**2/D)).T;
           for j in range(N):
@@ -143,15 +143,22 @@ class Detector(object):
           stp = sum(c**2); q = c/sqrt(stp); stp = stp/dot(dot(q.T,db),q); c.shape = 2;
           self.setorigin(self._origin - c);
 
-          # Update tilt
-          w = (1/dz);
-          C = vstack((cos(p),-sin(p))).T; Cs = (C*w[:,[0,0]]).T;
-          db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,z));
-          stp2 = sum(c**2); q = c/sqrt(stp2); stp2 = stp2/dot(dot(q.T,db),q); c.shape = 2;
-          self.settilt(self._tilt - c*180/pi);
+          # Update tilt.
+          # Tilt is normally very small, so wait until origin is rather stable.
+          stp2=0
+          if stp < 1:
+            w = (1/dz);
+            C = vstack((cos(p),-sin(p))).T; Cs = (C*w[:,[0,0]]).T;
+            db = linalg.inv(dot(Cs,C)); c = dot(db,dot(Cs,z));
+            stp2 = sum(c**2); q = c/sqrt(stp2); stp2 = stp2/dot(dot(q.T,db),q); c.shape = 2;
+            self.settilt(self._tilt - c*180/pi);
+            full_iterations += 1
 
-          stp = sqrt(stp+stp2); loops += 1;
+          stp = sqrt(stp+stp2)
+          iterations += 1
           print("Step = {0:.3f}".format(stp[0,0]))
+          print('Iteration %s' % (iterations,))
+          print self
 
 class Pixium(Detector):
     """Pixium detector object"""
