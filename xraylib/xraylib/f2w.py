@@ -26,9 +26,10 @@
 #   >>> r,A=Det.integrate(P,1)    # integrates over the whole 2pi
 #   >>> r,A=Det.integrate(P,N)    # integrates N pies
 #
+import numpy as np
 from numpy import zeros, pi, meshgrid, arange, sqrt, arctan2, isnan, floor, prod,\
-                  trunc, nonzero, diff, hstack, vstack, int_, transpose, linalg, \
-                  dot, sin, cos, cumsum, ones
+                 trunc, nonzero, diff, hstack, vstack, int_, transpose,\
+                 linalg, dot, sin, cos, cumsum, ones
 
 import utils
 
@@ -40,19 +41,25 @@ class Detector(object):
     """A general detector object"""
     def __init__(self, **kwargs):
         for key in kwargs:
-            if key in ['distance','tilt', 'origin']:
-                self.__dict__.update({'_%s' % key : utils.toFloat(kwargs[key])})
+            if key in ['distance','tilt', 'origin', 'binning']:
+                self.__dict__.update({'_%s' % (key,) : utils.flatten(kwargs[key])})
+        if 'binning' in kwargs:
+            factor = list(sqrt(kwargs['binning']))*2
+            self._pixelsize = list(np.multiply(self._pixelsize,factor))
+            self._pixels    = list(np.divide(self._pixels,factor))
     def setdist(self,D):
-       self._distance = D; self._updated = False;
+        self._distance = D; self._updated = False;
     def setorigin(self,v):
-       self._origin = v; self._updated = False;
+        self._origin = v; self._updated = False;
     def settilt(self,v):
-       self._tilt = v; self._updated = False;
+        self._tilt = v; self._updated = False;
     def __str__(self):
-       s = 'Distance = ' + repr(self._distance) + 'mm\nOrigin   = ' + repr(self._origin) \
-         + 'mm\nTilt     = ' + repr(self._tilt) + 'deg\nPixels   = ' + repr(self._pixels)\
-         + '\nPixsize  = ' + repr(self._pixelsize) + 'mm';
-       return(s)
+        s = 'Distance = ' + repr(self._distance) + 'mm\nOrigin   = ' + repr(self._origin) \
+          + 'mm\nTilt     = ' + repr(self._tilt) + 'deg\nPixels   = ' + repr(self._pixels)\
+          + '\nPixsize  = ' + repr(self._pixelsize) + 'mm'
+        if 'binning' in self.__dict__:
+            s = s + '\nBinning mode = ' + repr(self._binning)
+        return(s)
     def _calcrt(self):
         if (not self._updated):
            r = pi/180.0/self._distance
@@ -180,16 +187,17 @@ def get_detector(name, **kwargs):
         raise Exception('Detector %s not known.' % (name,))
 
 class Calibrator(object):
-    def __init__(self, image, detector):
+    def __init__(self, image, dark_current, detector):
         self.image = image
         self.detector = detector
+        self.dark_current = dark_current
 
-    def calibrate(self, lower=10, upper=350, threshold=100):
+    def calibrate(self, limits=[10,350]):
         """ Calibrate tilt and origin of detector using data in the interval
-        [@lower,@upper]mm with a value exceeding @threshold. """
-        image = self.image
-        image[image<threshold] = 0
-        self.detector.calibrate(image,[lower,upper])
+        [@lower,@upper]mm with a value exceeding @threshold.
+        If pixel_limits=True, lower and upper limits are given in pixels. """
+        # FIXME default limits to fraction of diffraction detector
+        self.detector.calibrate(self.image, limits, drk=self.dark_current)
 
     def __str__(self):
         return str(self.detector)
