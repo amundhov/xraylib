@@ -15,9 +15,9 @@ except ImportError:
 class Calibration(utils.Script):
     def __init__(self):
         super(Calibration, self).__init__()
-        self.usage = 'Usage: %prog <options> [DARK_CURRENT_FILE,...] CALIBRATION_FILE'
+        self.usage = 'Usage: %prog <options> CALIBRATION_IMAGE [DARK_CURRENT1,DARK_CURRENT2,...]'
         self.description = """
-        Xray-calibration routine based on ring shape.
+        XRD calibration routine based on ring shape.
         """
 
     def parser_setup(self):
@@ -60,7 +60,8 @@ class Calibration(utils.Script):
         super(Calibration, self).parse()
 
         if len(self.args) == 0:
-            self.parser.error("Please provide a calibration image")
+            self.parser.print_help()
+            self.parser.exit()
 
         # Set up self.detector
         DETECTOR_KWARGS = {
