@@ -3,6 +3,8 @@ import numpy as np
 
 import fabio
 
+IMAGE_EXTENSIONS = [ '.edf', '.h5' ]
+
 def saveDataset(file_handle, data, data_set='/xraylib/image'):
     group = file_handle.require_group(os.path.dirname(data_set))
     dataset = group.require_dataset(
@@ -42,8 +44,15 @@ class ImageFile:
 def ImageSequence(file_names):
     if all([os.path.splitext(file_name)[1] == '.edf' for file_name in file_names]):
         edf_image = fabio.edfimage.edfimage().read(file_names[0])
-        for f in file_names:
-            yield edf_image.fastReadData(f)
+        if edf_image.nframes > 1:
+            print('Reading %s frames' % edf_image.nframes)
+            for f in file_names:
+                edf_image = fabio.open(f)
+                for i in xrange(0,edf_image.nframes):
+                    yield edf_image.getframe(i).data
+        else:
+            for f in file_names:
+                yield edf_image.fastReadData(f)
     else:
         for f in file_names:
             yield ImageFile(f).getImage()
