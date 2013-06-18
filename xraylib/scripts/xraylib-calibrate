@@ -93,7 +93,7 @@ class Calibration(utils.Script):
         if self.options.outfile:
             self.print_verbose('---> Saving %s' % (self.options.outfile,))
             f = files.ImageFile(self.options.outfile)
-            f.saveImage(calibration_image, self.options.data_set)
+            f.saveImage(self.calibration_image-self.dark_current, self.options.data_set)
 
         self.calibrator = f2w.Calibrator(self.calibration_image, self.dark_current, self.detector)
 
@@ -126,9 +126,20 @@ class Calibration(utils.Script):
             self.print_verbose("---> Writing geometry to", self.options.poni_file)
             g.save(self.options.poni_file)
 
+    def output(self):
+        if self.options.outfile is None:
+            return
+        if self.dark_current is not None:
+            calibration_profile = self.detector.integrate(self.calibration_image - self.dark_current)
+        else:
+            calibration_profile = self.detector.integrate(self.calibration_image)
+        files.ImageFile(self.options.outfile).saveImage(calibration_profile[1], xraylib.CALIBRATION_PROFILE)
+
 if __name__ == "__main__":
     cal = Calibration()
     cal.parser_setup()
     cal.parse()
     cal.calibrate()
+    cal.output()
+    cal.print_timings()
 
