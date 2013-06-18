@@ -75,10 +75,8 @@ class Integrator(utils.Script):
             directory = '.'
         else:
             directory = self.directory
-        # FIXME sort files
-        self.files = [os.path.join(directory,o) for 
-                       o in os.listdir(directory) if o.startswith(file_prefix)]
-        self.file_names = [ o for o in os.listdir(directory) if o.startswith(file_prefix) ]
+        self.file_names = [ o for o in os.listdir(directory) if o.startswith(file_prefix) and os.path.splitext(o)[1] in files.IMAGE_EXTENSIONS]
+        self.files = [  os.path.join(directory,o) for o in self.file_names ]
 
         if ( all([os.path.splitext(file_path)[1] == '.edf'
                 for file_path in self.args]) and
