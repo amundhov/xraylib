@@ -44,9 +44,8 @@ class Detector(object):
             if key in ['distance','tilt', 'origin', 'binning']:
                 self.__dict__.update({'_%s' % (key,) : utils.flatten(kwargs[key])})
         if 'binning' in kwargs:
-            factor = list(sqrt(kwargs['binning']))*2
-            self._pixelsize = list(np.multiply(self._pixelsize,factor))
-            self._pixels    = list(np.divide(self._pixels,factor))
+            self._pixelsize = list(np.multiply(self._pixelsize, self._binning))
+            self._pixels    = list(np.divide(self._pixels, self._binning))
     def setdist(self,D):
         self._distance = D; self._updated = False;
     def setorigin(self,v):

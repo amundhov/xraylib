@@ -39,10 +39,12 @@ class Calibration(utils.Script):
                       help="Detector name", default=None)
         detector_group.add_option("--distance", dest="detector_distance",
                       help="Detector distance from sample", metavar="<distance> [mm]",default=None)
-        detector_group.add_option("--binning", dest="detector_binning",
-                      help="Number of pixels that detector is set to group.", metavar="<count>",default=None)
+        detector_group.add_option("--binning", dest="detector_binning", nargs=2, action='append',
+                      help="Pixels in x and y that detector is set to group.",
+                      metavar="<count>",default=None)
         detector_group.add_option ('--tilt', dest="detector_tilt", nargs=2, action='append',
-                      help="", metavar="<tilt1> <tilt2> [degrees]", default=None)
+                      help="",
+                      metavar="<tilt1> <tilt2> [degrees]", default=None)
         detector_group.add_option ('--origin', dest="detector_origin", nargs=2, action='append',
                       help="Detector origin wrt sample",
                       metavar="<x> <y> [mm]", default=None)
