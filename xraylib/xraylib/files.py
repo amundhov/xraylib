@@ -5,6 +5,15 @@ import fabio
 
 IMAGE_EXTENSIONS = [ '.edf', '.h5' ]
 
+def matchImageFiles(path):
+    """ Return list of images starting with given path """
+
+    (directory,file_prefix) = os.path.split(os.path.expanduser(path))
+    if directory == '':
+        directory = '.'
+    file_names = [ o for o in os.listdir(directory) if o.startswith(file_prefix) and os.path.splitext(o)[1] in IMAGE_EXTENSIONS]
+    return (directory, file_names)
+
 def saveDataset(file_handle, data, data_set='/xraylib/image'):
     group = file_handle.require_group(os.path.dirname(data_set))
     dataset = group.require_dataset(
@@ -18,6 +27,7 @@ class ImageFile:
     def __init__(self,file_path):
         self.extension = os.path.splitext(file_path)[1]
         self.file_path = file_path
+
     def getImage(self, data_set='/entry/image'):
         if self.extension == '.h5':
             import h5py
@@ -45,9 +55,9 @@ def ImageSequence(file_names):
     if all([os.path.splitext(file_name)[1] == '.edf' for file_name in file_names]):
         edf_image = fabio.edfimage.edfimage().read(file_names[0])
         if edf_image.nframes > 1:
-            print('Reading %s frames' % edf_image.nframes)
             for f in file_names:
                 edf_image = fabio.open(f)
+                print('Reading %s frames' % edf_image.nframes)
                 for i in xrange(0,edf_image.nframes):
                     yield edf_image.getframe(i).data
         else:
