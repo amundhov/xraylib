@@ -68,13 +68,15 @@ def ImageSequence(file_names):
             yield ImageFile(f).getImage()
 
 # TODO write test
-def averageImages(file_names, method='median'):
+def averageImages(file_paths, method='median'):
     """ Load and average a list of images. """
-    file_names = [ f for f in file_names if os.path.isfile(f)]
-    if len(file_names) == 0:
+    if not hasattr(file_paths, '__iter__'):
+        file_paths = [ file_paths ]
+    image_paths = [ f for f in file_paths if os.path.isfile(f)]
+    if len(image_paths) == 0:
         raise Exception("No valid files to average")
 
-    images = np.dstack([ o for o in ImageSequence(file_names)])
+    images = np.dstack([ o for o in ImageSequence(image_paths)])
 
     if method == 'median':
         return np.median(images,axis=2)
