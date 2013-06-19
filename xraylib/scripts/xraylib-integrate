@@ -29,14 +29,14 @@ class Integrator(utils.Script):
         super(Integrator, self).parser_setup()
 
         input_group = optparse.OptionGroup(self.parser, "Input options")
-        input_group.add_option("--data-prefix", dest="data_path",
+        input_group.add_option("--data-path", dest="data_path",
                           metavar="/path/IMAGE_xyz_",
                           help="Integrate files starting with this path.")
-        #input_group.add_option("--dark-prefix", dest="dark_prefix",
-        #                  metavar="/path/DARK_xyz_",
-        #                  help="Use dark noise files starting with this path.")
-        input_group.add_option("--dark", dest="dark",
-                          help="Dark noise image.")
+        input_group.add_option("--dark-path", dest="dark_path",
+                          metavar="/path/DARK_xyz_", default=None,
+                          help="Use darkcurrent files starting with this path.")
+        input_group.add_option("--dark", dest="dark", default=None,
+                          help="Darkcurrent image.")
         input_group.add_option("-p", "--ponit", dest="poni_file",
                           help="Name of poni file with detector geometry.")
 
@@ -70,16 +70,20 @@ class Integrator(utils.Script):
         if not self.options.data_path:
             self.parser.error("Please specify the prefix for your data files")
 
-        (self.directory,file_prefix) = os.path.split(os.path.expanduser(self.options.data_path))
-        if self.directory == '':
-            directory = '.'
-        else:
-            directory = self.directory
-        self.file_names = [ o for o in os.listdir(directory) if o.startswith(file_prefix) and os.path.splitext(o)[1] in files.IMAGE_EXTENSIONS]
-        self.files = [  os.path.join(directory,o) for o in self.file_names ]
+        (data_directory, data_names) = files.matchImageFiles(self.options.data_path)
 
-        print self.file_names
-        print self.files
+        if self.options.dark_path is not None:
+            (dark_directory, dark_names) = files.matchImageFiles(self.options.dark_path)
+            if len(dark_names) == 0:
+                self.parser.error('No dark files found starting with %s at %s' % (file_prefix,directory))
+            self.print_verbose("--> Averaging dark images")
+            self.dark = files.averageImages([ os.path.join(dark_directory, o) for o in dark_names ])
+
+        if self.options.dark and os.path.exists(self.options.dark):
+            self.dark = files.averageImages(self.options.dark)
+
+        if len(data_names) == 0:
+            self.parser.error('No data files found starting with %s at %s' % (file_prefix,directory))
 
         self.disable_gpu = self.options.disable_gpu
         self.disable_threads = self.options.disable_threads
@@ -87,7 +91,8 @@ class Integrator(utils.Script):
         if len(self.options.data_set.split('/')) < 2:
             self.parser.error("Dataset should be on the form '/group_name/data_set'.")
 
-        self.parameters = [ [int(parm) for parm in os.path.splitext(o)[0].split(file_prefix)[1].split('_')[1:]] for o in self.file_names ]
+        parameters = [ [int(parm) for parm in os.path.splitext(o)[0].split(file_prefix)[1].split('_')[1:]] for o in data_names ]
+        print parameters
         parametersT = np.array(self.parameters).T
 
         self.number_of_parameters = parametersT.shape[0]
@@ -97,19 +102,19 @@ class Integrator(utils.Script):
         max_indices = parametersT.argmax(axis=1)
 
         parameter_interval = np.array([ [ parametersT[i][min_indices[i]], parametersT[i][max_indices[i]] ] for i in xrange(0,self.number_of_parameters) ])
-        self.parameter_count  = [ j-i+1 for i,j in parameter_interval ]
-        self.parameter_min = parameter_interval.T[0]
+        self.parameter_count  = [ j-i+1 for i,j in parameter_interval ] + [76]
+        self.parameter_min = parameter_interval.T[0] + [0]
 
         if self.options.poni_file and os.path.exists(self.options.poni_file):
             self.integrator = pyFAI.load(self.options.poni_file)
         else:
             self.parser.error("Need poni file to set up Azimuthal integrator.")
 
-        if self.options.dark and os.path.exists(self.options.dark):
-            self.dark = files.ImageFile(self.options.dark).getImage()
-            # FIXME pyFAI doesn't subtract darkcurrent as of june 2013
-            #self.integrator.darkcurrent = self.dark 
-
+        if self.dark is not None:
+            print self.dark
+            self.integrator.darkcurrent = self.dark
+        else:
+            self.print_verbose("No darkcurrent provided")
 
     @utils.Script.timed
     def create_dataset(self):
