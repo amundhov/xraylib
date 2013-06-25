@@ -19,9 +19,10 @@ class Averager(utils.Script):
         output_group.add_option("-o", "--out", dest="outfile",
                           help="File to save averaged dataset", metavar="FILE", default="averaged.edf")
         output_group.add_option("--data-set", dest="data_set",
-                          help="Location to save data set (hdf5 etc).", metavar="STRING", default="/xraylib/average")
-        output_group.add_option("-g", action="store_true", help="Group option.")
+                          help="Location to save data set (hdf5 etc).", metavar="STRING", default=xraylib.AVERAGE_DATA_SET)
         self.parser.add_option_group(output_group)
+        self.parser.add_option("--flatten", dest="flatten", action="store_true", default=False,
+                          help="Flatten multiframe files.")
         self.parser.add_option("--method",
                           dest="method", default="median",
                           metavar="[median][mean]", help="Choose between arithmetic mean and median.")
@@ -37,7 +38,11 @@ class Averager(utils.Script):
 
     @utils.Script.timed
     def average(self):
-        self.image = files.averageImages(self.args)
+        if not self.options.flatten:
+            group_frames = True
+        else:
+            group_frames = False
+        self.image = files.averageImages(self.args, group_frames=group_frames)
 
     @utils.Script.timed
     def output(self):

@@ -70,40 +70,24 @@ class Integrator(utils.Script):
         if not self.options.data_path:
             self.parser.error("Please specify the prefix for your data files")
 
-        (data_directory, data_names) = files.matchImageFiles(self.options.data_path)
+        (data_prefix, data_directory, data_names) = files.matchImageFiles(self.options.data_path)
+        self.files = [ os.path.join(data_directory, file_name) for file_name in data_names ]
 
         if self.options.dark_path is not None:
-            (dark_directory, dark_names) = files.matchImageFiles(self.options.dark_path)
+            (dark_prefix, dark_directory, dark_names) = files.matchImageFiles(self.options.dark_path)
             if len(dark_names) == 0:
-                self.parser.error('No dark files found starting with %s at %s' % (file_prefix,directory))
+                self.parser.error('No dark files found starting with %s at %s' % (dark_prefix,directory))
             self.print_verbose("--> Averaging dark images")
             self.dark = files.averageImages([ os.path.join(dark_directory, o) for o in dark_names ])
 
         if self.options.dark and os.path.exists(self.options.dark):
-            self.dark = files.averageImages(self.options.dark)
+            self.dark = files.ImageFile(self.options.dark).getImage(xraylib.AVERAGE_DATA_SET)
 
         if len(data_names) == 0:
-            self.parser.error('No data files found starting with %s at %s' % (file_prefix,directory))
+            self.parser.error('No data files found starting with %s at %s' % (data_prefix,directory))
 
         self.disable_gpu = self.options.disable_gpu
         self.disable_threads = self.options.disable_threads
-
-        if len(self.options.data_set.split('/')) < 2:
-            self.parser.error("Dataset should be on the form '/group_name/data_set'.")
-
-        parameters = [ [int(parm) for parm in os.path.splitext(o)[0].split(file_prefix)[1].split('_')[1:]] for o in data_names ]
-        print parameters
-        parametersT = np.array(self.parameters).T
-
-        self.number_of_parameters = parametersT.shape[0]
-        self.print_verbose('Number of parameters: ', self.number_of_parameters)
-
-        min_indices = parametersT.argmin(axis=1)
-        max_indices = parametersT.argmax(axis=1)
-
-        parameter_interval = np.array([ [ parametersT[i][min_indices[i]], parametersT[i][max_indices[i]] ] for i in xrange(0,self.number_of_parameters) ])
-        self.parameter_count  = [ j-i+1 for i,j in parameter_interval ] + [76]
-        self.parameter_min = parameter_interval.T[0] + [0]
 
         if self.options.poni_file and os.path.exists(self.options.poni_file):
             self.integrator = pyFAI.load(self.options.poni_file)
@@ -111,10 +95,34 @@ class Integrator(utils.Script):
             self.parser.error("Need poni file to set up Azimuthal integrator.")
 
         if self.dark is not None:
-            print self.dark
             self.integrator.darkcurrent = self.dark
         else:
             self.print_verbose("No darkcurrent provided")
+
+        if len(self.options.data_set.split('/')) < 2:
+            self.parser.error("Dataset should be on the form '/group_name/data_set'.")
+
+        parameters = [[int(parm) for parm in os.path.splitext(o)[0].split(data_prefix)[1].split('_')
+                        if parm is not '']
+                      for o in data_names]
+        parametersT = np.array(parameters).T
+        print parametersT
+
+        min_indices = parametersT.argmin(axis=1)
+        max_indices = parametersT.argmax(axis=1)
+
+        parameter_interval = np.array([ [ parametersT[i][min_indices[i]], parametersT[i][max_indices[i]] ] for i in xrange(0,parametersT.shape[0]) ])
+        parameters = [(i,j-i+1) for i,j in parameter_interval]
+
+        nframes = files.ImageFile(self.files[0]).getNFrames()
+        parameters = parameters + [(0,nframes)]
+        parameters = [(minVal,count) for minVal,count in parameters  if count > 1]
+        self.parameterCount = [count for minVal,count in parameters ]
+
+        print parameters
+        self.dimensions = len(parameters)
+        self.print_verbose('Number of dimensions: ', self.dimensions)
+
 
     @utils.Script.timed
     def create_dataset(self):
@@ -127,17 +135,18 @@ class Integrator(utils.Script):
         self.det.settilt(np.array([-0.17446037,  0.01906504]))
         (two_theta, self.darkcurrent_profile) = self.det.integrate(self.dark)
 
-        self.print_verbose("Data set size:", (2,) + tuple(self.parameter_count) + self.darkcurrent_profile.shape,)
+        self.print_verbose("Data set size:", tuple(self.parameter_count) + self.darkcurrent_profile.shape,)
 
         self.hd5 = h5py.File(self.options.outfile)
         group = self.hd5.require_group(os.path.dirname(self.options.data_set))
+        if self.options.data_set in group:
+            group[self.options.data_set].resize(tuple(self.parameter_count) + self.darkcurrent_profile.shape)
         self.dataset = group.require_dataset(
                            name=os.path.basename(self.options.data_set),
-                           # FIXME remove (2,) when done testing
-                           shape=(2,) + tuple(self.parameter_count) + self.darkcurrent_profile.shape,
-                           chunks=(2,) + tuple(self.parameter_count) + (1,),
+                           shape=tuple(self.parameter_count) + self.darkcurrent_profile.shape,
+                           chunks=tuple(self.parameter_count) + (1,),
                            dtype="float32"
-                        )
+        )
         darkcurrent = group.require_dataset(
                            name=xraylib.DARKCURRENT_DATA_SET,
                            shape=self.darkcurrent_profile.shape,
@@ -147,7 +156,6 @@ class Integrator(utils.Script):
 
     @utils.Script.timed
     def integrate_and_assemble(self):
-
         if self.disable_threads:
             i=0
             for image in files.ImageSequence(self.files):
@@ -181,13 +189,19 @@ class Integrator(utils.Script):
             self.image_queue.put(image,block=True)
 
     def integrate_files(self):
-        for i in xrange(0,len(self.files)):
-            if self.abort:
-                return
-            self.print_verbose("Integrating ", self.file_names[i])
-            self.integrate_single_file(i, self.image_queue.get())
-            self.image_queue.task_done()
-        self.finished = True
+
+        # load all dark-images in list
+
+        # FIXME , do same logic as xraylib-assemble?
+        for key in itertools.product(*map(xrange,self.parameterCount)):
+            print key
+        #for i in xrange(0,len(self.files)):
+        #    if self.abort:
+        #        return
+        #    self.print_verbose("Integrating ", self.file_names[i])
+        #    self.integrate_single_file(i, self.image_queue.get())
+        #    self.image_queue.task_done()
+        #self.finished = True
 
     def integrate_single_file(self,file_number, image):
         index = self.parameters[file_number]-self.parameter_min
@@ -201,9 +215,33 @@ class Integrator(utils.Script):
                         self.darkcurrent_profile.shape[0],
                         safe=False,
                         devicetype="gpu")
+            self.dataset[(1,)+tuple(index)] = I
+            #self.integrator = pyFAI.load(self.options.poni_file+'1')
+            #tth, I = self.integrator.xrpd_LUT_OCL(
+            #            image-self.dark,
+            #            self.darkcurrent_profile.shape[0],
+            #            safe=False,
+            #            devicetype="gpu")
+            #self.dataset[(2,)+tuple(index)] = I
+
+            #self.integrator = pyFAI.load(self.options.poni_file+'2')
+            #tth, I = self.integrator.xrpd_LUT_OCL(
+            #            image-self.dark,
+            #            self.darkcurrent_profile.shape[0],
+            #            safe=False,
+            #            devicetype="gpu")
+            #self.dataset[(3,)+tuple(index)] = I
+
+            #self.integrator = pyFAI.load(self.options.poni_file+'3')
+            #tth, I = self.integrator.xrpd_LUT_OCL(
+            #            image-self.dark,
+            #            self.darkcurrent_profile.shape[0],
+            #            safe=False,
+            #            devicetype="gpu")
+            #self.dataset[(4,)+tuple(index)] = I
         else:
-            tth, I = self.integrator.xrpd_LUT(image-self.dark, self.darkcurrent_profile.shape[0], safe=False)
-        self.dataset[(1,)+tuple(index)] = I
+            tth, I = self.integrator.xrpd_LUT(image, self.darkcurrent_profile.shape[0], safe=False)
+            self.dataset[(1,)+tuple(index)] = I
 
     @utils.Script.timed
     def output(self):

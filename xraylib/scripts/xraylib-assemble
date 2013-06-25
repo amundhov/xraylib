@@ -109,11 +109,14 @@ class Assembler(utils.Script):
         darkcurrent = self.darkcurrent_profile[r_min:r_max]
 
         ''' Fit peaks for sinogram. Last dimension is assumed
-            to be the integrated diffraction profile '''
+            to be the radial profile '''
         for key in itertools.product(*map(xrange,self.input_data.shape[:-1])):
             signal = self.input_data[key][r_min:r_max]
             # Use signal as squared error. dy ~ sqrt(y)
             w = 1.0 / (signal+darkcurrent)
+            if any( w < 0 ):
+                print key
+                print w
             B = A * np.array([w,w,w])
             covC = np.linalg.inv(np.dot(B,A.T))
             c = np.dot(np.dot(covC, B), signal)

@@ -3,6 +3,10 @@ import numpy as np
 
 import fabio
 
+import xraylib
+
+EDF = '.edf'
+HDF5 = '.h5'
 IMAGE_EXTENSIONS = [ '.edf', '.h5' ]
 
 def matchImageFiles(path):
@@ -12,9 +16,9 @@ def matchImageFiles(path):
     if directory == '':
         directory = '.'
     file_names = [ o for o in os.listdir(directory) if o.startswith(file_prefix) and os.path.splitext(o)[1] in IMAGE_EXTENSIONS]
-    return (directory, file_names)
+    return (file_prefix, directory, file_names)
 
-def saveDataset(file_handle, data, data_set='/xraylib/image'):
+def saveDataset(file_handle, data, data_set='/entry/image'):
     group = file_handle.require_group(os.path.dirname(data_set))
     dataset = group.require_dataset(
                     name=os.path.basename(data_set),
@@ -28,17 +32,26 @@ class ImageFile:
         self.extension = os.path.splitext(file_path)[1]
         self.file_path = file_path
 
+    def getNFrames(self):
+        if self.extension == HDF5:
+            return 1
+        elif self.extension == EDF:
+            return fabio.open(self.file_path).nframes
+
     def getImage(self, data_set='/entry/image'):
-        if self.extension == '.h5':
+        if self.extension == HDF5:
             import h5py
             with h5py.File(self.file_path) as f:
                 try:
                     self.image = f[data_set].value
                 except KeyError:
-                    raise KeyError('Data set %s does not exist' % (data_set,))
+                    if xraylib.IMAGE_PATH not in f:
+                        raise KeyError('Data set %s does not exist' % (data_set,))
+                    else:
+                        self.image = f[xraylib.IMAGE_PATH]
         else:
             import fabio
-            self.image = fabio.openimage.openimage(self.file_path).data
+            self.image = fabio.open(self.file_path)
         return self.image
 
     def saveImage(self, image, data_set='/xraylib/image'):
@@ -47,28 +60,46 @@ class ImageFile:
             with h5py.File(self.file_path) as f:
                 saveDataset(f, image, data_set)
         elif self.extension == '.edf':
+            #FIXME multimensional datasets? Raise exception? Save frames?
             import fabio
             edf_image = fabio.edfimage.edfimage(image)
             edf_image.write(self.file_path)
 
-def ImageSequence(file_names):
-    if all([os.path.splitext(file_name)[1] == '.edf' for file_name in file_names]):
-        edf_image = fabio.edfimage.edfimage().read(file_names[0])
-        if edf_image.nframes > 1:
-            for f in file_names:
+def ImageSequence(file_paths, data_set=xraylib.IMAGE_PATH, group_frames=False, repeat=False):
+    def yieldEDF():
+        edf_image = fabio.edfimage.edfimage().read(file_paths[0])
+        nframes = edf_image.nframes
+        if nframes > 1:
+            for f in file_paths:
                 edf_image = fabio.open(f)
-                print('Reading %s frames' % edf_image.nframes)
-                for i in xrange(0,edf_image.nframes):
-                    yield edf_image.getframe(i).data
+                if group_frames:
+                    ret = np.zeros([edf_image.nframes] + edf_image.dims)
+                    for i in xrange(0,edf_image.nframes):
+                        ret[i] = edf_image.getframe(i).data
+                    yield ret
+                else:
+                    for i in xrange(0,edf_image.nframes):
+                        yield edf_image.getframe(i).data
         else:
-            for f in file_names:
+            for f in file_paths:
                 yield edf_image.fastReadData(f)
-    else:
-        for f in file_names:
-            yield ImageFile(f).getImage()
 
-# TODO write test
-def averageImages(file_paths, method='median'):
+    def yieldHDF5():
+        for f in file_paths:
+            yield ImageFile(f).getImage(data_set)
+
+    if all([os.path.splitext(file_name)[1] == '.edf' for file_name in file_paths]):
+        while(True):
+            yieldEDF()
+            if not repeat:
+                break
+    else:
+        while(True):
+            yieldHDF5()
+            if not repeat:
+                break
+
+def averageImages(file_paths, method='median', group_frames=True):
     """ Load and average a list of images. """
     if not hasattr(file_paths, '__iter__'):
         file_paths = [ file_paths ]
@@ -76,11 +107,12 @@ def averageImages(file_paths, method='median'):
     if len(image_paths) == 0:
         raise Exception("No valid files to average")
 
-    images = np.dstack([ o for o in ImageSequence(image_paths)])
+    images = np.concatenate(tuple([ o[None,...] for o in ImageSequence(image_paths, group_frames)]), axis=0)
 
     if method == 'median':
-        return np.median(images,axis=2)
+        res = np.median(images,axis=0)
     elif method == 'mean':
-        return np.mean(images,axis=2)
+        res = np.mean(images,axis=0)
     else:
         raise Exception('METHOD NOT IMPLEMENTED')
+    return res
