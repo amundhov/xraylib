@@ -7,7 +7,7 @@ import xraylib
 
 EDF = '.edf'
 HDF5 = '.h5'
-IMAGE_EXTENSIONS = [ '.edf', '.h5' ]
+IMAGE_EXTENSIONS = [ EDF, HDF5 ]
 
 def matchImageFiles(path):
     """ Return list of images starting with given path """
@@ -51,7 +51,7 @@ class ImageFile:
                         self.image = f[xraylib.IMAGE_PATH]
         else:
             import fabio
-            self.image = fabio.open(self.file_path)
+            self.image = fabio.open(self.file_path).data
         return self.image
 
     def saveImage(self, image, data_set='/xraylib/image'):
