@@ -81,7 +81,6 @@ class Integrator(utils.Script):
 
         (data_prefix, data_directory, self.data_names) = files.matchImageFiles(self.options.data_path)
         self.files = [ os.path.join(data_directory, file_name) for file_name in self.data_names ]
-        print self.files
 
         if self.options.dark_path is not None:
             (dark_prefix, dark_directory, dark_names) = files.matchImageFiles(self.options.dark_path)
@@ -111,9 +110,7 @@ class Integrator(utils.Script):
         else:
             self.parser.error("Need poni file to set up Azimuthal integrator.")
 
-        if self.dark is not None:
-            self.integrator.darkcurrent = self.dark
-        else:
+        if self.dark is None:
             self.print_verbose("No darkcurrent provided")
 
         if len(self.options.data_set.split('/')) < 2:
@@ -123,7 +120,6 @@ class Integrator(utils.Script):
                         if parm is not '']
                       for o in self.data_names]
         parametersT = np.array(parameters).T
-        print parametersT
 
         min_indices = parametersT.argmin(axis=1)
         max_indices = parametersT.argmax(axis=1)
@@ -142,8 +138,6 @@ class Integrator(utils.Script):
 
     @utils.Script.timed
     def create_dataset(self):
-        self.print_verbose("--> Integrating darkcurrent")
-        (two_theta, self.darkcurrent_profile) = self.integrate(self.dark)
         self.print_verbose("--> Creating dataset")
 
 
@@ -165,6 +159,17 @@ class Integrator(utils.Script):
                            dtype="float32"
         )
         darkcurrent[:] = self.darkcurrent_profile
+
+    @utils.Script.timed
+    def integrate_darkcurrent(self):
+        self.print_verbose("--> Integrating darkcurrent")
+        if self.dark.ndim > 2:
+            self.print_verbose("    multiple frames.")
+            if self.dark.shape[0] != self.nframes:
+                self.parser.error("Number of darkcurrent frames does not match the diffraction image(s)")
+            self.darkcurrent_profile = [ self.integrate(o)[1] for o in self.dark[:,...] ] 
+
+        (two_theta, self.darkcurrent_profile) = self.integrate(self.dark)
 
     @utils.Script.timed
     def integrate_and_assemble(self):
@@ -200,6 +205,8 @@ class Integrator(utils.Script):
         for image in files.ImageSequence(self.files):
             self.image_queue.put(image,block=True)
 
+
+    @utils.Script.timed
     def integrate_files(self):
 
         # load all dark-images in list
@@ -208,7 +215,7 @@ class Integrator(utils.Script):
         for index in itertools.product(*map(xrange,self.parameter_count)):
             if self.abort:
                 return
-            self.print_verbose("Integrating ", self.data_names[i])
+            self.print_verbose("Integrating ", index, " ", self.data_names[i])
             self.integrate_single_file(index, self.image_queue.get())
             self.image_queue.task_done()
             i += 1
@@ -226,9 +233,8 @@ class Integrator(utils.Script):
         return (tth,I)
 
     def integrate_single_file(self,index, image):
-        self.print_verbose("Index ", index)
-        (tth,I) =self.integrate(image)
-        self.dataset[tuple(index)] = I
+        (tth,I) = self.integrate(image)
+        self.dataset[tuple(index)] = I - self.darkcurrent_profile
 
     @utils.Script.timed
     def output(self):
