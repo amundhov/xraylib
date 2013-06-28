@@ -65,8 +65,8 @@ class ImageFile:
             edf_image = fabio.edfimage.edfimage(image)
             edf_image.write(self.file_path)
 
-def ImageSequence(file_paths, data_set=xraylib.IMAGE_PATH, group_frames=False, repeat=False):
-    def yieldEDF():
+def ImageSequence(file_paths, data_set=xraylib.IMAGE_PATH, group_frames=False):
+    if all([os.path.splitext(file_name)[1] == '.edf' for file_name in file_paths]):
         edf_image = fabio.edfimage.edfimage().read(file_paths[0])
         nframes = edf_image.nframes
         if nframes > 1:
@@ -84,20 +84,10 @@ def ImageSequence(file_paths, data_set=xraylib.IMAGE_PATH, group_frames=False, r
             for f in file_paths:
                 yield edf_image.fastReadData(f)
 
-    def yieldHDF5():
+    else:
         for f in file_paths:
             yield ImageFile(f).getImage(data_set)
 
-    if all([os.path.splitext(file_name)[1] == '.edf' for file_name in file_paths]):
-        while(True):
-            yieldEDF()
-            if not repeat:
-                break
-    else:
-        while(True):
-            yieldHDF5()
-            if not repeat:
-                break
 
 def averageImages(file_paths, method='median', group_frames=True):
     """ Load and average a list of images. """
