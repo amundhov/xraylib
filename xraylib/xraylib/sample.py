@@ -37,6 +37,7 @@ class Sample:
         """ Calculates the form factor of sample given
             scattering vector q = 4*pi*sin(Theta)/lambda """
         def interpolate():
+            """ FIXME """
             return 1
         form_factor = _weighted(interpolate)(q)
         return form_factor
