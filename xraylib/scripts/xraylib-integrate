@@ -168,7 +168,8 @@ class Integrator(utils.Script):
             self.print_verbose("    multiple frames.")
             if self.dark.shape[0] != self.nframes:
                 self.parser.error("Number of darkcurrent frames does not match the diffraction image(s)")
-            self.darkcurrent_profile = [ self.integrate(o)[1] for o in self.dark[:,...] ] 
+            self.darkcurrent_profile = np.array([ self.integrate(o)[1] for o in self.dark[:,...] ])
+            return
 
         (two_theta, self.darkcurrent_profile) = self.integrate(self.dark)
 
@@ -239,7 +240,10 @@ class Integrator(utils.Script):
         self.print_verbose("Integrating ", index, indent=1)
 
         (tth,I) = self.integrate(image)
-        self.dataset[tuple(index)] = I - self.darkcurrent_profile
+        if self.nframes > 1:
+            self.dataset[tuple(index)] = I - self.darkcurrent_profile[iteration % self.nframes]
+        else:
+            self.dataset[tuple(index)] = I - self.darkcurrent_profile
 
     @utils.Script.timed
     def output(self):
