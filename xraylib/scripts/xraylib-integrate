@@ -176,8 +176,9 @@ class Integrator(utils.Script):
     def integrate_and_assemble(self):
         if self.disable_threads:
             i=0
-            for image in files.ImageSequence(self.files):
-                self.integrate_single_file(i,image)
+            images = files.ImageSequence(self.files)
+            for index in itertools.product(*map(xrange,self.parameter_count)):
+                self.integrate_single_file(i, index, next(images))
                 i=i+1
             return
 
@@ -216,10 +217,7 @@ class Integrator(utils.Script):
         for index in itertools.product(*map(xrange,self.parameter_count)):
             if self.abort:
                 return
-            if i % self.nframes == 0:
-                self.print_verbose(" ---> " ,self.data_names[i%self.nframes])
-            self.print_verbose("Integrating ", index, indent=1)
-            self.integrate_single_file(index, self.image_queue.get())
+            self.integrate_single_file(i, index, self.image_queue.get())
             self.image_queue.task_done()
             i += 1
         self.finished = True
@@ -235,7 +233,11 @@ class Integrator(utils.Script):
             tth, I = self.integrator.xrpd_LUT(image, self.integration_points, safe=False)
         return (tth,I)
 
-    def integrate_single_file(self,index, image):
+    def integrate_single_file(self, iteration, index, image):
+        if iteration % self.nframes == 0:
+            self.print_verbose(" ---> " ,self.data_names[iteration%self.nframes])
+        self.print_verbose("Integrating ", index, indent=1)
+
         (tth,I) = self.integrate(image)
         self.dataset[tuple(index)] = I - self.darkcurrent_profile
 
