@@ -80,8 +80,11 @@ class Script(object):
             print('%s: %.2fs' % (i.replace('_',' ').capitalize(),j))
 
 
-    def print_verbose(self,*args):
+    def print_verbose(self, *args, **kwargs):
         if self.options.verbose or not self.options.silent:
+            if 'indent' in kwargs:
+                for i in xrange(0, kwargs['indent']):
+                    print "      ",
             for arg in args:
                print arg,
             print
