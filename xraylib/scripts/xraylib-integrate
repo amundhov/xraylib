@@ -82,6 +82,9 @@ class Integrator(utils.Script):
         (data_prefix, data_directory, self.data_names) = files.matchImageFiles(self.options.data_path)
         self.files = [ os.path.join(data_directory, file_name) for file_name in self.data_names ]
 
+        if len(self.data_names) == 0:
+            self.parser.error('No data files found starting with %s at %s' % (data_prefix,directory))
+
         if self.options.dark_path is not None:
             (dark_prefix, dark_directory, dark_names) = files.matchImageFiles(self.options.dark_path)
             if len(dark_names) == 0:
@@ -92,8 +95,6 @@ class Integrator(utils.Script):
         if self.options.dark and os.path.exists(self.options.dark):
             self.dark = files.ImageFile(self.options.dark).getImage(xraylib.AVERAGE_DATA_SET)
 
-        if len(self.files) == 0:
-            self.parser.error('No data files found starting with %s at %s' % (data_prefix,directory))
 
         if self.options.disable_gpu is not None:
             self.disable_gpu = self.options.disable_gpu
@@ -127,8 +128,8 @@ class Integrator(utils.Script):
         parameter_interval = np.array([ [ parametersT[i][min_indices[i]], parametersT[i][max_indices[i]] ] for i in xrange(0,parametersT.shape[0]) ])
         parameters = [(i,j-i+1) for i,j in parameter_interval]
 
-        nframes = files.ImageFile(self.files[0]).getNFrames()
-        parameters = parameters + [(0,nframes)]
+        self.nframes = files.ImageFile(self.files[0]).getNFrames()
+        parameters = parameters + [(0,self.nframes)]
         parameters = [(minVal,count) for minVal,count in parameters  if count > 1]
         self.parameter_count = [count for minVal,count in parameters ]
 
@@ -155,7 +156,7 @@ class Integrator(utils.Script):
         )
         darkcurrent = group.require_dataset(
                            name=xraylib.DARKCURRENT_DATA_SET,
-                           shape=(self.integration_points,),
+                           shape=self.darkcurrent_profile.shape,
                            dtype="float32"
         )
         darkcurrent[:] = self.darkcurrent_profile
@@ -215,7 +216,9 @@ class Integrator(utils.Script):
         for index in itertools.product(*map(xrange,self.parameter_count)):
             if self.abort:
                 return
-            self.print_verbose("Integrating ", index, " ", self.data_names[i])
+            if i % self.nframes == 0:
+                self.print_verbose(" ---> " ,self.data_names[i%self.nframes])
+            self.print_verbose("Integrating ", index, indent=1)
             self.integrate_single_file(index, self.image_queue.get())
             self.image_queue.task_done()
             i += 1
@@ -245,6 +248,7 @@ if __name__ == '__main__':
 
     intg.parser_setup()
     intg.parse()
+    intg.integrate_darkcurrent()
     intg.create_dataset()
     intg.integrate_and_assemble()
 
