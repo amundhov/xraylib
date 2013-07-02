@@ -117,23 +117,23 @@ class Integrator(utils.Script):
         if len(self.options.data_set.split('/')) < 2:
             self.parser.error("Dataset should be on the form '/group_name/data_set'.")
 
-        parameters = [[int(parm) for parm in os.path.splitext(o)[0].split(data_prefix)[1].split('_')
+        indices = [[int(parm) for parm in os.path.splitext(o)[0].split(data_prefix)[1].split('_')
                         if parm is not '']
                       for o in self.data_names]
-        parametersT = np.array(parameters).T
+        indicesT = np.array(indices).T
 
-        min_indices = parametersT.argmin(axis=1)
-        max_indices = parametersT.argmax(axis=1)
+        min_indices = indicesT.argmin(axis=1)
+        max_indices = indicesT.argmax(axis=1)
 
-        parameter_interval = np.array([ [ parametersT[i][min_indices[i]], parametersT[i][max_indices[i]] ] for i in xrange(0,parametersT.shape[0]) ])
-        parameters = [(i,j-i+1) for i,j in parameter_interval]
+        parameter_interval = np.array([ [ indicesT[i][min_indices[i]], indicesT[i][max_indices[i]] ] for i in xrange(0,indicesT.shape[0]) ])
+        dimensions = [(i,j-i+1) for i,j in parameter_interval]
 
         self.nframes = files.ImageFile(self.files[0]).getNFrames()
-        parameters = parameters + [(0,self.nframes)]
-        parameters = [(minVal,count) for minVal,count in parameters  if count > 1]
-        self.parameter_count = [count for minVal,count in parameters ]
+        dimensions = dimensions + [(0,self.nframes)]
+        dimensions = [(minVal,count) for minVal,count in dimensions  if count > 1]
+        self.parameter_count = [count for minVal,count in dimensions ]
 
-        self.dimensions = len(parameters)
+        self.dimensions = len(dimensions)
         self.print_verbose('Number of dimensions: ', self.dimensions)
 
 
