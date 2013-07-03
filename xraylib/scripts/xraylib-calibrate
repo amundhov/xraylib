@@ -118,13 +118,27 @@ class Calibration(utils.Script):
             self.parser.error("pyFAI needed for PONI file")
         elif pyFAI is not None and self.options.poni_file:
             from pyFAI import geometry
-            g = geometry.Geometry(dist=self.detector._distance/1000.0, # mm-> m
-                                  poni1=self.detector._origin[0]/1000.0, # mm -> m
-                                  poni2=self.detector._origin[1]/1000.0, # mm -> m
-                                  rot1=self.detector._tilt[0]*np.pi/180.0,   # deg -> rad
-                                  rot2=self.detector._tilt[1]*np.pi/180.0,   # deg -> rad
-                                  pixel1=self.detector._pixelsize[0]/1000.0,  # mm -> m
-                                  pixel2=self.detector._pixelsize[1]/1000.0)  # mm -> m
+            g = geometry.Geometry()
+
+            # converto to fit2D tilt plane notation from projected tilt angles in f2w.py
+            alpha = self.detector._tilt[0] * np.pi / 180
+            beta  = self.detector._tilt[1] * np.pi / 180
+            tiltPlanRotation = np.arctan(alpha/beta)
+            tilt = alpha * np.sin(tiltPlanRotation) + beta * np.cos(tiltPlanRotation)
+
+            # Convert to degrees used by fit2D
+            tiltPlanRotation = tiltPlanRotation * 180.0 / np.pi
+            tilt = tilt * 180.0 / np.pi
+
+            self.print_verbose("tilt ", tilt)
+            self.print_verbose("tiltPlanRotation ", tiltPlanRotation)
+            g.setFit2D(self.detector._distance,
+                       self.detector._origin[1]/self.detector._pixelsize[1], # mm -> #
+                       self.detector._origin[0]/self.detector._pixelsize[0], # mm -> #
+                       tiltPlanRotation=tiltPlanRotation,   # deg -> rad
+                       tilt=tilt,   # deg -> rad
+                       pixelX=self.detector._pixelsize[0]*1000.0,  # mm -> um
+                       pixelY=self.detector._pixelsize[1]*1000.0)  # mm -> um
             self.print_verbose("---> Writing geometry to", self.options.poni_file)
             g.save(self.options.poni_file)
 
