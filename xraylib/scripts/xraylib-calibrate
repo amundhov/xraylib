@@ -28,7 +28,7 @@ class Calibration(utils.Script):
                           help="Origin and calibration limits in pixels instead of mm.")
         file_group = optparse.OptionGroup(self.parser, "File options")
         file_group.add_option("-o", "--out", dest="outfile",
-                      help="Filename where calibration image is saved", metavar="FILE")
+                      help="Save calibration image after subtracting darkcurrent", metavar="FILE")
         file_group.add_option("--data-set", dest="data_set",
                      help="Location to save data set.", metavar="STRING", default=xraylib.CALIBRATION_IMAGE)
         file_group.add_option("-p", "--poni", dest="poni_file",
