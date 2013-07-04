@@ -60,7 +60,9 @@ class ImageFile:
             with h5py.File(self.file_path) as f:
                 saveDataset(f, image, data_set)
         elif self.extension == '.edf':
-            #FIXME multimensional datasets? Raise exception? Save frames?
+            #FIXME Save multi frames
+            if image.ndim > 2:
+                raise RuntimeError("Can't save multi-dimensional data sets in edf format")
             import fabio
             edf_image = fabio.edfimage.edfimage(image)
             edf_image.write(self.file_path)
@@ -89,20 +91,29 @@ def ImageSequence(file_paths, data_set=xraylib.IMAGE_PATH, group_frames=False):
             yield ImageFile(f).getImage(data_set)
 
 
-def averageImages(file_paths, method='median', group_frames=True):
+def averageImages(file_paths, method='median'):
     """ Load and average a list of images. """
     if not hasattr(file_paths, '__iter__'):
         file_paths = [ file_paths ]
-    image_paths = [ f for f in file_paths if os.path.isfile(f)]
-    if len(image_paths) == 0:
+    file_paths = [ f for f in file_paths if os.path.isfile(f)]
+    if len(file_paths) == 0:
         raise Exception("No valid files to average")
 
-    images = np.concatenate(tuple([ o[None,...] for o in ImageSequence(image_paths, group_frames)]), axis=0)
+    nframes = ImageFile(file_paths[0]).getNFrames()
+    image_dims = tuple(ImageFile(file_paths[0]).getImage().shape)
+    image_count = len(file_paths)
 
-    if method == 'median':
-        res = np.median(images,axis=0)
-    elif method == 'mean':
-        res = np.mean(images,axis=0)
-    else:
-        raise Exception('METHOD NOT IMPLEMENTED')
-    return res
+    edf_files = [ fabio.open(path) for path in file_paths ]
+    res = np.zeros((nframes,) + image_dims)
+    image_stack = np.zeros((image_count,) + image_dims)
+    for i in xrange(0,nframes):
+        for j in xrange(0,image_count):
+            image_stack[j] = edf_files[j].getframe(i).data
+        if method == 'median':
+            res[i] = np.median(image_stack,axis=0)
+        elif method == 'mean':
+            res[i] = np.mean(image_stack,axis=0)
+        else:
+            raise Exception('METHOD NOT IMPLEMENTED')
+
+    return res.squeeze()
