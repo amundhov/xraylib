@@ -99,20 +99,23 @@ def averageImages(file_paths, method='median'):
     if len(file_paths) == 0:
         raise Exception("No valid files to average")
 
+    img = ImageFile(file_paths[0]).getImage()
+    dtype = img.dtype
     nframes = ImageFile(file_paths[0]).getNFrames()
-    image_dims = tuple(ImageFile(file_paths[0]).getImage().shape)
+    image_dims = tuple(img.shape)
     image_count = len(file_paths)
 
     edf_files = [ fabio.open(path) for path in file_paths ]
-    res = np.zeros((nframes,) + image_dims)
-    image_stack = np.zeros((image_count,) + image_dims)
+    res = np.zeros((nframes,) + image_dims, dtype=dtype)
+    image_stack = np.zeros((image_count,) + image_dims, dtype=dtype)
     for i in xrange(0,nframes):
+        print('Averaging frame %s' % i)
         for j in xrange(0,image_count):
             image_stack[j] = edf_files[j].getframe(i).data
         if method == 'median':
-            res[i] = np.median(image_stack,axis=0)
+            res[i] = np.median(image_stack,axis=0).astype(dtype)
         elif method == 'mean':
-            res[i] = np.mean(image_stack,axis=0)
+            res[i] = np.mean(image_stack,axis=0).astype(dtype)
         else:
             raise Exception('METHOD NOT IMPLEMENTED')
 
