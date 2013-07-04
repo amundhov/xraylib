@@ -236,7 +236,7 @@ class Integrator(utils.Script):
 
     def integrate_single_file(self, iteration, index, image):
         if iteration % self.nframes == 0:
-            self.print_verbose(" ---> " ,self.data_names[iteration%self.nframes])
+            self.print_verbose(" ---> " ,self.data_names[iteration/self.nframes])
         self.print_verbose("Integrating ", index, indent=1)
 
         (tth,I) = self.integrate(image)
