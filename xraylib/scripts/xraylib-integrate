@@ -49,9 +49,9 @@ class Integrator(utils.Script):
 
         output_group = optparse.OptionGroup(self.parser, "Output options")
         output_group.add_option("-o", "--out", dest="outfile",
-                          help="File to save integrated dataset.", metavar="FILE", default="diff_tomo.h5")
+                          help="File to save integrated dataset.", metavar="FILE", default="diffractogram.h5")
         output_group.add_option("--data-set", dest="data_set",
-                          help="Location to save data set.", metavar="STRING", default="/xraylib/diff_tomo")
+                          help="Location to save data set.", metavar="STRING", default=xraylib.DIFFRACTOGRAM_DATA_SET)
 
         self.parser.add_option_group(input_group)
         self.parser.add_option_group(output_group)
