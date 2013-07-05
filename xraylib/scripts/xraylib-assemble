@@ -59,8 +59,8 @@ class Assembler(utils.Script):
             self.output_set = self.options.output_set
 
         self.peak = {
-                'fwhm'     : self.options.peak_fwhm,
-                'position' : self.options.peak_position,
+                'fwhm'     : float(self.options.peak_fwhm),
+                'position' : float(self.options.peak_position),
                 'shape'    : self.options.peak_shape
         }
 
