@@ -59,14 +59,10 @@ class Assembler(utils.Script):
         else:
             self.parser.error("Could not open input file")
 
-        if not self.options.output_set:
-            self.output_set = 'xraylib/sinogram_%s'  % (self.options.peak_position,)
-        else:
-            self.output_set = self.options.output_set
 
         self.peak = {
-                'fwhm'     : float(self.options.peak_fwhm),
-                'position' : float(self.options.peak_position),
+                'fwhm'     : self.options.peak_fwhm,
+                'position' : self.options.peak_position,
                 'shape'    : self.options.peak_shape
         }
 
@@ -82,6 +78,10 @@ class Assembler(utils.Script):
                 except:
                     self.parser.error("Could not parse peak file %s" % (self.options.peak_file,))
 
+        if not self.options.output_set:
+            self.output_set = 'xraylib/sinogram_%s'  % (self.peak['position'],)
+        else:
+            self.output_set = self.options.output_set
 
         self.out_file = h5py.File(self.options.outfile)
         self.out_group = self.out_file.require_group(os.path.dirname(self.output_set))
