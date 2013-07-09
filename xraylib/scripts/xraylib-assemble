@@ -29,6 +29,9 @@ class Assembler(utils.Script):
                           help="Exported peak from DAWN.", metavar="FILE")
         input_group.add_option("--input-set", dest="input_set",
                           help="Override data set [default /xraylib/diff_tomo].", metavar="STRING", default="/xraylib/diff_tomo")
+        self.parser.add_option("--flip", dest="flip",
+                          action="store_true", default=False,
+                          help="Flip every other scan line.")
 
 
         output_group = optparse.OptionGroup(self.parser, "Output options")
@@ -45,6 +48,8 @@ class Assembler(utils.Script):
         super(Assembler, self).parse()
 
         #   Parse input and output files/datasets, peak shapes
+
+        self.do_flip = self.options.flip
 
         if len(self.args) == 1 and os.path.exists(self.args[0]):
             self.input_data = files.ImageFile(self.args[0]).getImage(self.options.input_set)
@@ -129,6 +134,18 @@ class Assembler(utils.Script):
 
             self.output_peaks[key+(0,)] = signal
             self.output_peaks[key+(1,)] = np.dot(A.T,c)
+
+        if self.do_flip:
+            i=0
+            for key in itertools.product(*map(xrange,self.output_data.shape[:-1])):
+                if i%2:
+                    print key
+                    row = self.output_data[key,:]
+                    self.output_data[key] = row[::-1]
+                i+=1
+                #for i in xrange(0,self.output.data.shape[-1]/2):
+                    
+                    
 
     @utils.Script.timed
     def output(self):
