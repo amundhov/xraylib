@@ -28,7 +28,8 @@ class Assembler(utils.Script):
         input_group.add_option("--peak-file", dest="peak_file",
                           help="Exported peak from DAWN.", metavar="FILE")
         input_group.add_option("--input-set", dest="input_set",
-                          help="Override data set [default /xraylib/diff_tomo].", metavar="STRING", default="/xraylib/diff_tomo")
+                          help='Override data set [default %s].' % (xraylib.DIFFRACTOGRAM_DATA_SET,),
+                          metavar="STRING", default=xraylib.DIFFRACTOGRAM_DATA_SET)
         self.parser.add_option("--flip", dest="flip",
                           action="store_true", default=False,
                           help="Flip every other scan line.")
