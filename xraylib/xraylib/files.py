@@ -60,11 +60,16 @@ class ImageFile:
             with h5py.File(self.file_path) as f:
                 saveDataset(f, image, data_set)
         elif self.extension == '.edf':
-            #FIXME Save multi frames
-            if image.ndim > 2:
-                raise RuntimeError("Can't save multi-dimensional data sets in edf format")
             import fabio
-            edf_image = fabio.edfimage.edfimage(image)
+            edf_image = fabio.edfimage.edfimage()
+            if image.ndim == 3:
+                edf_image.setData(image[0])
+                for i in xrange(1,image.shape[0]):
+                    edf_image.appendFrame(image[i])
+            elif image.ndim > 3:
+                raise RuntimeError("Number of dimensions greater than 3.")
+            else:
+                edf_image.setData(image)
             edf_image.write(self.file_path)
 
 def ImageSequence(file_paths, data_set=xraylib.IMAGE_PATH, group_frames=False):
