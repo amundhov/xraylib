@@ -37,7 +37,7 @@ class Assembler(utils.Script):
 
         output_group = optparse.OptionGroup(self.parser, "Output options")
         output_group.add_option("-o", "--out", dest="outfile",
-                          help="File to save sinogram.", metavar="FILE", default="sinogram.h5")
+                          help="Output prefix. [sinogram]", metavar="FILE", default="sinogram")
         output_group.add_option("--data-set", dest="output_set",
                           help="Location to save data set.", metavar="STRING", default=None)
 
@@ -83,7 +83,7 @@ class Assembler(utils.Script):
         else:
             self.output_set = self.options.output_set
 
-        self.out_file = h5py.File(self.options.outfile)
+        self.out_file = h5py.File(self.options.outfile+'.h5')
         self.out_group = self.out_file.require_group(os.path.dirname(self.output_set))
         self.output_data = self.out_group.require_dataset(
                            name=os.path.basename(self.output_set),
@@ -150,7 +150,12 @@ class Assembler(utils.Script):
 
     @utils.Script.timed
     def output(self):
+        # Write HDF5 file suitable for browsing in DAWN
+        self.output_data[:] = self.sinogram
         self.out_file.close()
+
+        # Write (possibly multiframe) sinogram in EDF format for reconstruction
+        files.ImageFile(self.options.outfile+'.edf').saveImage(self.sinogram)
 
 if __name__ == '__main__':
     assmbl = Assembler()
