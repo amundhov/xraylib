@@ -148,12 +148,13 @@ class Integrator(utils.Script):
         group = self.hd5.require_group(os.path.dirname(self.options.data_set))
         if self.options.data_set in group:
             group[self.options.data_set].resize(tuple(self.parameter_count) + (self.integration_points,))
-        self.dataset = group.require_dataset(
+        self.diffractogram_hd5 = group.require_dataset(
                            name=os.path.basename(self.options.data_set),
                            shape=tuple(self.parameter_count) + (self.integration_points,),
                            chunks=tuple(self.parameter_count) + (1,),
                            dtype="float32"
         )
+        self.diffractogram = np.zeros(tuple(self.parameter_count) + (self.integration_points,), dtype="float32")
         darkcurrent = group.require_dataset(
                            name=xraylib.DARKCURRENT_DATA_SET,
                            shape=self.darkcurrent_profile.shape,
@@ -241,12 +242,13 @@ class Integrator(utils.Script):
 
         (tth,I) = self.integrate(image)
         if self.nframes > 1:
-            self.dataset[tuple(index)] = I - self.darkcurrent_profile[iteration % self.nframes]
+            self.diffractogram[tuple(index)] = I - self.darkcurrent_profile[iteration % self.nframes]
         else:
-            self.dataset[tuple(index)] = I - self.darkcurrent_profile
+            self.diffractogram[tuple(index)] = I - self.darkcurrent_profile
 
     @utils.Script.timed
     def output(self):
+        self.diffractogram_hd5[:] = self.diffractogram
         self.hd5.close()
 
 if __name__ == '__main__':
