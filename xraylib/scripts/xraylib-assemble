@@ -66,6 +66,9 @@ class Assembler(utils.Script):
                 'shape'    : self.options.peak_shape
         }
 
+        self.peak = utils.strip_none_values(self.peak)
+        self.peak = utils.convert(self.peak,float)
+
         # Get peak options from dat file exported by DAWN
         if self.options.peak_file:
             with open(self.options.peak_file, 'rb') as f:
@@ -124,6 +127,9 @@ class Assembler(utils.Script):
 
         ''' Fit peaks for sinogram. Last dimension is assumed
             to be the radial profile '''
+        # Use temporary numpy array for assembly since we need reverse ::-1
+        # indexing for flipping, which is not available with h5py
+        sinogram = np.zeros(self.output_data.shape)
         for key in itertools.product(*map(xrange,self.input_data.shape[:-1])):
             signal = self.input_data[key][r_min:r_max]
             # Use signal as squared error. dy ~ sqrt(y)
