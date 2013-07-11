@@ -137,22 +137,16 @@ class Assembler(utils.Script):
             B = A * np.array([w,w,w])
             covC = np.linalg.inv(np.dot(B,A.T))
             c = np.dot(np.dot(covC, B), signal)
-            self.output_data[key] = c[2]
+            sinogram[key] = c[2]
 
             self.output_peaks[key+(0,)] = signal
             self.output_peaks[key+(1,)] = np.dot(A.T,c)
 
         if self.do_flip:
-            i=0
-            for key in itertools.product(*map(xrange,self.output_data.shape[:-1])):
-                if i%2:
-                    print key
-                    row = self.output_data[key,:]
-                    self.output_data[key] = row[::-1]
-                i+=1
-                #for i in xrange(0,self.output.data.shape[-1]/2):
-                    
-                    
+            rev = sinogram[...,1::2,::-1].copy()
+            sinogram[...,1::2,:] = rev
+        self.sinogram = sinogram
+
 
     @utils.Script.timed
     def output(self):
