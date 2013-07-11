@@ -37,7 +37,7 @@ def convert(val,val_type):
     try:
         return val_type(str(val).strip())
     except ValueError:
-        return None
+        return val
 
 class Script(object):
     def __init__(self):
