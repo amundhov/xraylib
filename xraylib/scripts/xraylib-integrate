@@ -241,15 +241,25 @@ class Integrator(utils.Script):
             i += 1
         self.finished = True
 
-    def integrate(self, image):
+    def integrate(self, image, dark=None):
         if not self.disable_gpu:
-            tth, I = self.integrator.xrpd_LUT_OCL(
+            tth, I = self.integrator.integrate1d(
                         image,
                         self.integration_points,
-                        safe=False,
-                        devicetype="gpu")
+                        dark=dark,
+                        unit='2th_deg',
+                        method="lut_ocl", # GPU method with Look-up-table
+                        safe=False, # Faster. Disables some LUT validation checks.
+                        )
         else:
-            tth, I = self.integrator.xrpd_LUT(image, self.integration_points, safe=False)
+            tth, I = self.integrator.integrate1d(
+                        image,
+                        self.integration_points,
+                        dark=dark,
+                        unit='2th_deg',
+                        method="lut", # CPU method with Look-up-table
+                        safe=False, # Faster. Disables some LUT validation checks.
+                        )
         return (tth,I)
 
     def integrate_single_file(self, iteration, index, image):
