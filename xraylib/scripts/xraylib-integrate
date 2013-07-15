@@ -77,7 +77,7 @@ class Integrator(utils.Script):
         super(Integrator, self).parse()
 
         if not self.options.data_path:
-            self.parser.error("Please specify the prefix for your data files")
+            self.parser.error("Please specify --data-path")
 
         (data_prefix, data_directory, self.data_names) = files.matchImageFiles(self.options.data_path)
         self.files = [ os.path.join(data_directory, file_name) for file_name in self.data_names ]
