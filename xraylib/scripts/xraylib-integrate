@@ -133,14 +133,21 @@ class Integrator(utils.Script):
         dimensions = [(minVal,count) for minVal,count in dimensions  if count > 1]
         self.parameter_count = [count for minVal,count in dimensions ]
 
+        if self.dark.ndim > 2:
+            if self.dark.shape[0] != self.nframes:
+                self.parser.error("Number of darkcurrent frames does not match the diffraction image(s)")
+            self.darkprofile_shape = (self.dark.shape[0], self.integration_points)
+        else:
+            self.darkprofile_shape = (self.integration_points,)
+
         self.dimensions = len(dimensions)
         self.print_verbose('Number of dimensions: ', self.dimensions)
+
 
 
     @utils.Script.timed
     def create_dataset(self):
         self.print_verbose("--> Creating dataset")
-
 
         self.print_verbose("Data set size:", tuple(self.parameter_count) + (self.integration_points,))
 
@@ -155,12 +162,16 @@ class Integrator(utils.Script):
                            dtype="float32"
         )
         self.diffractogram = np.zeros(tuple(self.parameter_count) + (self.integration_points,), dtype="float32")
-        darkcurrent = group.require_dataset(
+        self.darkcurrent = group.require_dataset(
                            name=xraylib.DARKCURRENT_DATA_SET,
-                           shape=self.darkcurrent_profile.shape,
+                           shape=self.darkprofile_shape,
                            dtype="float32"
         )
-        darkcurrent[:] = self.darkcurrent_profile
+        self.two_theta = group.require_dataset(
+                           name=xraylib.TWO_THETA_DATA_SET,
+                           shape=(self.integration_points,),
+                           dtype="float32"
+        )
 
     @utils.Script.timed
     def integrate_darkcurrent(self):
@@ -169,10 +180,16 @@ class Integrator(utils.Script):
             self.print_verbose("    multiple frames.")
             if self.dark.shape[0] != self.nframes:
                 self.parser.error("Number of darkcurrent frames does not match the diffraction image(s)")
-            self.darkcurrent_profile = np.array([ self.integrate(o)[1] for o in self.dark[:,...] ]).squeeze()
-            return
+            self.darkcurrent_profile = np.zeros((self.nframes,self.integration_points), dtype="float32")
+            (self.two_theta[:],self.darkcurrent_profile[0]) = self.integrate(self.dark[0,...])
+            for i in xrange(1,self.nframes):
+                darkcurrent_profile[i] = self.integrate(self.dark[i,...])[1]
+        else:
+            (self.two_theta[:],darkcurrent_profile) = self.integrate(self.dark)
+        self.darkcurrent[:] = darkcurrent_profile
 
-        (two_theta, self.darkcurrent_profile) = self.integrate(self.dark)
+            
+
 
     @utils.Script.timed
     def integrate_and_assemble(self):
@@ -240,11 +257,11 @@ class Integrator(utils.Script):
             self.print_verbose(" ---> " ,self.data_names[iteration/self.nframes])
         self.print_verbose("Integrating ", index, indent=1)
 
-        (tth,I) = self.integrate(image)
         if self.nframes > 1:
-            self.diffractogram[tuple(index)] = I - self.darkcurrent_profile[iteration % self.nframes]
+            (tth,I) = self.integrate(image, self.dark[iteration % self.nframes])
         else:
-            self.diffractogram[tuple(index)] = I - self.darkcurrent_profile
+            (tth,I) = self.integrate(image, self.dark[iteration % self.nframes])
+        self.diffractogram[tuple(index)] = I 
 
     @utils.Script.timed
     def output(self):
@@ -256,8 +273,8 @@ if __name__ == '__main__':
 
     intg.parser_setup()
     intg.parse()
-    intg.integrate_darkcurrent()
     intg.create_dataset()
+    intg.integrate_darkcurrent()
     intg.integrate_and_assemble()
 
     intg.output()
