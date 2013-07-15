@@ -97,7 +97,10 @@ def ImageSequence(file_paths, data_set=xraylib.IMAGE_PATH, group_frames=False):
 
 
 def averageImages(file_paths, method='median'):
-    """ Load and average a list of images. """
+    """ Load and average a list of images.
+        By default multi-frame files maintain their shape,
+        that is, frames are averaged across files and not
+        over internal frames"""
     if not hasattr(file_paths, '__iter__'):
         file_paths = [ file_paths ]
     file_paths = [ f for f in file_paths if os.path.isfile(f)]
@@ -114,9 +117,11 @@ def averageImages(file_paths, method='median'):
     res = np.zeros((nframes,) + image_dims, dtype=dtype)
     image_stack = np.zeros((image_count,) + image_dims, dtype=dtype)
     for i in xrange(0,nframes):
-        print('Averaging frame %s' % i)
         for j in xrange(0,image_count):
-            image_stack[j] = edf_files[j].getframe(i).data
+            if nframes == 1:
+                image_stack[j] = edf_files[j].data
+            else:
+                image_stack[j] = edf_files[j].getframe(i).data
         if method == 'median':
             res[i] = np.median(image_stack,axis=0).astype(dtype)
         elif method == 'mean':
