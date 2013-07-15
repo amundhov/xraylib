@@ -111,8 +111,8 @@ class Integrator(utils.Script):
         else:
             self.parser.error("Need poni file to set up Azimuthal integrator.")
 
-        if self.dark is None:
-            self.print_verbose("No darkcurrent provided")
+        if not 'dark' in self.__dict__:
+            self.parser.error("No darkcurrent provided")
 
         if len(self.options.data_set.split('/')) < 2:
             self.parser.error("Dataset should be on the form '/group_name/data_set'.")
@@ -270,8 +270,8 @@ class Integrator(utils.Script):
         if self.nframes > 1:
             (tth,I) = self.integrate(image, self.dark[iteration % self.nframes])
         else:
-            (tth,I) = self.integrate(image, self.dark[iteration % self.nframes])
-        self.diffractogram[tuple(index)] = I 
+            (tth,I) = self.integrate(image, self.dark)
+        self.diffractogram[tuple(index)] = I
 
     @utils.Script.timed
     def output(self):
