@@ -84,18 +84,18 @@ class Calibration(utils.Script):
         else:
             self.parser.error("self.detector missing")
 
-        self.calibration_image = files.ImageFile(self.args[0]).getImage()
 
         if len(self.args) > 1:
-            self.print_verbose("---> Averaging dark images")
-            self.dark_current = files.averageImages(self.args[1:])
+            self.dark_current = files.ImageFile(self.args[0]).getImage()
+            self.calibration_image = files.ImageFile(self.args[1]).getImage()
         else:
+            self.calibration_image = files.ImageFile(self.args[0]).getImage()
             self.dark_current = None
 
         if self.options.outfile:
             self.print_verbose('---> Saving %s' % (self.options.outfile,))
             f = files.ImageFile(self.options.outfile)
-            f.saveImage(self.calibration_image-self.dark_current, self.options.data_set)
+            f.saveImage(self.calibration_image.astype('float')-self.dark_current, self.options.data_set)
 
         self.calibrator = f2w.Calibrator(self.calibration_image, self.dark_current, self.detector)
 

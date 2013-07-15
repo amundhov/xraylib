@@ -117,7 +117,7 @@ class Detector(object):
 
        if drk is not None:
            self._bias = drk.mean()
-           Im = Im - drk
+           Im = Im.astype('float') - drk # Small negative values in uint16 causes underflow.
        iterations = 0; full_iterations = 0;
        D = self._distance; stp = 1;  N = 36; dp = 2*pi/N; p = arange(N)*dp-dp/2;
        y = zeros([N,1]); z = zeros([N,1]); dy = zeros([N,1]); dz = zeros([N,1]);
@@ -205,6 +205,7 @@ class Calibrator(object):
         [@lower,@upper]mm with a value exceeding @threshold.
         If pixel_limits=True, lower and upper limits are given in pixels. """
         # FIXME default limits to fraction of diffraction detector
+        #self.image[self.image<100] = 0
         self.detector.calibrate(self.image, limits, drk=self.dark_current)
 
     def __str__(self):
