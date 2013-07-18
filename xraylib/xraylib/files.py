@@ -96,7 +96,7 @@ def ImageSequence(file_paths, data_set=xraylib.IMAGE_PATH, group_frames=False):
             yield ImageFile(f).getImage(data_set)
 
 
-def averageImages(file_paths, method='median'):
+def averageImages(file_paths, method='median', flatten=False):
     """ Load and average a list of images.
         By default multi-frame files maintain their shape,
         that is, frames are averaged across files and not
@@ -114,18 +114,29 @@ def averageImages(file_paths, method='median'):
     image_count = len(file_paths)
 
     edf_files = [ fabio.open(path) for path in file_paths ]
-    res = np.zeros((nframes,) + image_dims, dtype=dtype)
-    image_stack = np.zeros((image_count,) + image_dims, dtype=dtype)
-    for i in xrange(0,nframes):
-        for j in xrange(0,image_count):
-            if nframes == 1:
-                image_stack[j] = edf_files[j].data
+
+    if not flatten:
+        res = np.zeros((nframes,) + image_dims, dtype=dtype)
+        image_stack = np.zeros((image_count,) + image_dims, dtype=dtype)
+        for i in xrange(0,nframes):
+            print 'Averaging frame %s' % i
+            for j in xrange(0,image_count):
+                if nframes == 1:
+                    image_stack[j] = edf_files[j].data
+                else:
+                    image_stack[j] = edf_files[j].getframe(i).data
+            if method == 'median':
+                res[i] = np.median(image_stack,axis=0).astype(dtype)
+            elif method == 'mean':
+                res[i] = np.mean(image_stack,axis=0).astype(dtype)
             else:
-                image_stack[j] = edf_files[j].getframe(i).data
+                raise Exception('METHOD NOT IMPLEMENTED')
+    else:
+        image_stack = np.array([o for o in ImageSequence(file_paths)])
         if method == 'median':
-            res[i] = np.median(image_stack,axis=0).astype(dtype)
+            res = np.median(image_stack,axis=0).astype(dtype)
         elif method == 'mean':
-            res[i] = np.mean(image_stack,axis=0).astype(dtype)
+            res = np.mean(image_stack,axis=0).astype(dtype)
         else:
             raise Exception('METHOD NOT IMPLEMENTED')
 

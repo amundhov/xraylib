@@ -24,6 +24,9 @@ class Averager(utils.Script):
         self.parser.add_option("--method",
                           dest="method", default="median",
                           metavar="[median][mean]", help="Choose between arithmetic mean and median.")
+        self.parser.add_option("--flatten", dest="flatten",
+                          action="store_true", default=False,
+                          help="Average over frames in multiframe files.")
 
     def parse(self):
         super(Averager, self).parse()
@@ -36,7 +39,7 @@ class Averager(utils.Script):
 
     @utils.Script.timed
     def average(self):
-        self.image = files.averageImages(self.args)
+        self.image = files.averageImages(self.args,method=self.options.method, flatten=self.options.flatten)
 
     @utils.Script.timed
     def output(self):
