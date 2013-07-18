@@ -155,7 +155,7 @@ class Assembler(utils.Script):
         self.out_file.close()
 
         # Write (possibly multiframe) sinogram in EDF format for reconstruction
-        files.ImageFile(self.options.outfile+'.edf').saveImage(self.sinogram)
+        files.ImageFile(self.options.outfile+'.edf').saveImage(self.sinogram.astype('single'))
 
 if __name__ == '__main__':
     assmbl = Assembler()

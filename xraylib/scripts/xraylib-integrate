@@ -71,6 +71,8 @@ class Integrator(utils.Script):
         self.parser.add_option("--disable-threads",
                           action="store_true", dest="disable_threads",
                           help="Disable threaded loading of files.")
+        self.parser.add_option("--nbuffer", dest="nbuffers", default=2,
+                          help="Number of files to buffer when loading files")
 
     @utils.Script.timed
     def parse(self):
@@ -102,6 +104,8 @@ class Integrator(utils.Script):
             self.disable_threads = self.options.disable_threads
         if self.options.disable_fast_edf is not None:
             self.disable_fast_edf = self.options.disable_fast_edf
+
+        self.nbuffers = self.options.nbuffers
 
         if self.options.integration_points is not None:
             self.integration_points = self.options.integration_points
@@ -180,12 +184,13 @@ class Integrator(utils.Script):
             self.print_verbose("    multiple frames.")
             if self.dark.shape[0] != self.nframes:
                 self.parser.error("Number of darkcurrent frames does not match the diffraction image(s)")
-            self.darkcurrent_profile = np.zeros((self.nframes,self.integration_points), dtype="float32")
-            (self.two_theta[:],self.darkcurrent_profile[0]) = self.integrate(self.dark[0,...])
+            darkcurrent_profile = np.zeros((self.nframes,self.integration_points), dtype="float32")
+            (self.two_theta[:],darkcurrent_profile[0]) = self.integrate(self.dark[0,...])
             for i in xrange(1,self.nframes):
                 darkcurrent_profile[i] = self.integrate(self.dark[i,...])[1]
         else:
             (self.two_theta[:],darkcurrent_profile) = self.integrate(self.dark)
+        # Save integrated darkcurrent to file for reference only
         self.darkcurrent[:] = darkcurrent_profile
 
             
@@ -201,7 +206,7 @@ class Integrator(utils.Script):
                 i=i+1
             return
 
-        self.image_queue = Queue.Queue(1)
+        self.image_queue = Queue.Queue(self.nframes*self.nbuffers+1)
         self.finished = False
         self.abort    = False
 
@@ -216,6 +221,7 @@ class Integrator(utils.Script):
         while(not self.finished and not self.abort):
             try:
                 intg_thread.join(2)
+                self.print_verbose(self.image_queue.qsize(), " images in queue")
             except KeyboardInterrupt:
                 self.abort = True
 
