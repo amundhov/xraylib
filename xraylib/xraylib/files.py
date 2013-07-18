@@ -65,7 +65,7 @@ class ImageFile:
             if image.ndim == 3:
                 edf_image.setData(image[0])
                 for i in xrange(1,image.shape[0]):
-                    edf_image.appendFrame(image[i])
+                    edf_image.appendFrame(data=image[i])
             elif image.ndim > 3:
                 raise RuntimeError("Number of dimensions greater than 3.")
             else:
