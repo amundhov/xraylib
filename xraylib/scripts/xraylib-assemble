@@ -48,17 +48,30 @@ class Assembler(utils.Script):
     def parse(self):
         super(Assembler, self).parse()
 
-        #   Parse input and output files/datasets, peak shapes
-
         self.do_flip = self.options.flip
 
-        if len(self.args) == 1 and os.path.exists(self.args[0]):
-            self.input_data = files.ImageFile(self.args[0]).getImage(self.options.input_set)
-            self.darkcurrent_profile = files.ImageFile(self.args[0]).getImage(xraylib.DARKCURRENT_DATA_SET)
-            self.output_shape = self.input_data.shape[:-1]
-        else:
-            self.parser.error("Could not open input file")
+        stacks = len(self.args)
+        if stacks == 0 or not os.path.exists(self.args[0]):
+            self.parser.error("Please specify diffractograms")
 
+        if not all(os.path.exists(o) for o in self.args):
+            self.parser.error("Could not read all files")
+
+        diffractogram = files.ImageFile(self.args[0]).getImage(self.options.input_set)
+        darkcurrent_profile = files.ImageFile(self.args[0]).getImage(xraylib.DARKCURRENT_DATA_SET)
+        self.input_data = np.zeros((stacks,)+diffractogram.shape)
+        self.darkcurrent_profile = np.zeros((stacks,)+darkcurrent_profile.shape)
+        self.input_data[0] = diffractogram
+        self.darkcurrent_profile[0] = darkcurrent_profile
+
+        diff_seq = files.ImageSequence(self.args,data_set=self.options.input_set)
+        dark_seq = files.ImageSequence(self.args,data_set=xraylib.DARKCURRENT_DATA_SET)
+        for i in xrange(1,stacks):
+            self.print_verbose('Loading slice %s' % i)
+            self.input_data[i] = next(diff_seq)
+            self.darkcurrent_profile[i] = next(dark_seq)
+
+        self.output_shape = self.input_data.shape[:-1]
 
         self.peak = {
                 'fwhm'     : self.options.peak_fwhm,
@@ -71,6 +84,8 @@ class Assembler(utils.Script):
 
         # Get peak options from dat file exported by DAWN
         if self.options.peak_file:
+            # TODO use all peaks in peak file and assemble the ones
+            # not yet present in outfile
             with open(self.options.peak_file, 'rb') as f:
                 try:
                     (header,data) = f.readlines()
@@ -115,14 +130,14 @@ class Assembler(utils.Script):
         )
 
         A = np.array([np.ones(r.size), r, peak_fun(r)])
-        if len(self.darkcurrent_profile.shape) > 1:
-            darkcurrent = self.darkcurrent_profile[...,r_min:r_max]
-            if darkcurrent.shape[0] != self.input_data.shape[-2]:
+        darkcurrent = self.darkcurrent_profile[...,r_min:r_max]
+        if len(self.darkcurrent_profile.shape) > 2:
+            if darkcurrent.shape[1] != self.input_data.shape[-2]:
                 self.parser.error("Darkcurrent frames does not match the number of data frames")
-            nframes = darkcurrent.shape[0]
+            nframes = darkcurrent.shape[1]
         else:
-            darkcurrent = self.darkcurrent_profile[r_min:r_max]
-            darkcurrent.shape = (1,) + darkcurrent.shape
+            darkcurrent = self.darkcurrent_profile[...,r_min:r_max]
+            darkcurrent.shape = (1,1,) + darkcurrent.shape
             nframes = 1
 
         ''' Fit peaks for sinogram. Last dimension is assumed
@@ -131,9 +146,12 @@ class Assembler(utils.Script):
         # indexing for flipping, which is not available with h5py
         sinogram = np.zeros(self.output_data.shape)
         for key in itertools.product(*map(xrange,self.input_data.shape[:-1])):
+            # Key iterates over all indices in stack of sinograms
             signal = self.input_data[key][r_min:r_max]
+            # Index dark profile. Stack number and frame number.
+            dark = darkcurrent[key[0],key[-1] % nframes,...]
             # Use signal as squared error. dy ~ sqrt(y)
-            w = 1.0 / (signal+darkcurrent[key[-1] % nframes])
+            w = 1.0 / (signal+dark)
             B = A * np.array([w,w,w])
             covC = np.linalg.inv(np.dot(B,A.T))
             c = np.dot(np.dot(covC, B), signal)
