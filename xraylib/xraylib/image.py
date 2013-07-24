@@ -1,13 +1,18 @@
 import numpy as np
 
+from scipy.fftpack import fft, ifft, fft2, ifft2
+from scipy import optimize
+from scipy import fftpack
+from scipy import ndimage
+
+import utils
+
 def shift(img, count):
     """ Shifts every odd line by a constant number of pixels """
-    # TODO subpixel shift, interpolation
+    # TODO subpixel shift using ndarray.shift , spline interpolation
     tmp = np.zeros(img.shape,dtype=img.dtype)
 
-    if count == 0:
-        return img
-    elif count > 0:
+    if count > 0:
         tmp[::2,:-count] = img[::2,count:]
         tmp[1::2,:] = img[1::2,:]
     else:
@@ -16,10 +21,90 @@ def shift(img, count):
         tmp[1::2,:-count] = img[1::2,count:]
     return tmp
 
-def truncate(img, count):
-    """ Cut off edges of sinogram. Negative pixel count
-    means to truncate right side """
-    pass
+
+def sino_remove_highlights(sinogram):
+    """ If value is above some local threshold,
+        replace by median. Removes dodgy highlights
+        resulting from bragg spots of large crystallites
+        in diffracting orientations """
+    
+
+def sino_deinterlace(sinogram):
+    sino_deinterlaced = sinogram.copy()
+    sino_even = sinogram[::2,...]
+    sino_odd = sinogram[1::2,...]
+    if sino_even.shape > sino_odd.shape:
+        shift = _correlate_images(sino_even[:-1,...], sino_odd)
+    else:
+        shift = _correlate_images(sino_even, sino_odd)
+
+    sino_deinterlaced[1::2,...] = ndimage.shift(sinogram[1::2,...],(0,shift))
+    return sino_deinterlaced
 
 def sino_center(sinogram):
-    pass
+    """ Finds rotation axis of sinogram by using first
+    and last projections which are assumed to be 
+    180 degrees apart. Last projection is reversed and
+    correlated with the first and the shifted image
+    with rotation axis in center is returned. """
+    proj1 = sinogram[0,...]
+    proj2 = sinogram[-1,::-1]
+    shift = _correlate_projections(proj1, proj2)
+    return ndimage.shift(sinogram, (0,-shift))
+    #center = proj1.shape[0] / 2. + 0.5 + shift / 2.
+    #return center
+
+
+
+# Code taken and adapted from
+# https://github.com/eddam/python-esrf/blob/master/rotation_axis.py
+# due to Emmanuelle Gouillart
+
+def _correlate_images(im1, im2, method='brent'):
+    shape = im1.shape
+    f1 = fft2(im1)
+    f1[0, 0] = 0
+    f2 = fft2(im2)
+    f2[0, 0] = 0
+    ir = np.real(ifft2((f1 * f2.conjugate())))
+    t0, t1 = np.unravel_index(np.argmax(ir), shape)
+    if t0 >= shape[0]/2:
+        t0 -= shape[0]
+    if t1 >= shape[1]/2:
+        t1 -= shape[1]
+
+    def cost_function(s, im1, im2):
+        return - np.corrcoef([im1[3:-3, 3:-3].ravel(),
+                            ndimage.shift(im2, (0, s))[3:-3, 3:-3].ravel()])[0, 1]
+    if method == 'brent':
+        newim2 = ndimage.shift(im2, (t0, t1))
+        refine = optimize.brent(cost_function, args=(im1, newim2),
+                        brack=[-1, 1], tol=1.e-2)
+    return t1 + refine
+
+def _correlate_projections(proj1, proj2, method='brent'):
+    shape = proj1.shape
+    f1 = fft(proj1)
+    f1[0] = 0
+    f2 = fft(proj2)
+    f2[0] = 0
+    ir = np.real(ifft((f1 * f2.conjugate())))
+    utils.debug_print(ir = ir, f1 = f1, f2 = f2)
+    (t0,) = np.unravel_index(np.argmax(ir), shape)
+    if t0 >= shape[0]/2:
+        t0 -= shape[0]
+    utils.debug_print(t0=t0)
+
+    def cost_function(s, proj1, proj2):
+        utils.debug_print(s=s, shifted=ndimage.shift(proj2,s))
+        cost = - np.corrcoef([proj1, ndimage.shift(proj2,s)])[0,1]
+        utils.debug_print(cost=cost)
+        return cost
+
+    if method == 'brent':
+        newproj2 = ndimage.shift(proj2, (t0,))
+        refine = optimize.brent(cost_function, args=(proj1, newproj2),
+                        brack=[-1, 1], tol=1.e-5)
+
+    return t0 + refine
+
