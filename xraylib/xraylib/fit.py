@@ -2,7 +2,7 @@ import numpy as np
 
 import utils
 
-SQRT2 = 0.4142135623730951
+SQRT2 = 1.41421356237309504880
 
 GAUSSIAN  = 'gaussian'
 DELTA     = 'delta'
@@ -29,8 +29,8 @@ def erf(x):
 PEAK_FUNCTIONS = {
         GAUSSIAN  : lambda x,x0,sigma: 1.0/(np.sqrt(2*np.pi)*sigma)*np.exp(-0.5*((x-x0)/sigma)**2),
         DELTA     : lambda x,x0: 1 if  x == x0 else 0,
-        GAUSS_ERF : lambda x,x0,sigma: erf( (x+0.5-x0) / (SQRT2*sigma)) -\
-                                      erf( (x-0.5-x0) / (SQRT2*sigma))
+        GAUSS_ERF : lambda x,x0,sigma: 0.5*(erf( (x+0.5-x0) / (SQRT2*sigma)) -
+                                      erf( (x-0.5-x0) / (SQRT2*sigma)))
 }
 
 def get_peak_function(position=0, fwhm=1, shape=DELTA, **kwargs):
