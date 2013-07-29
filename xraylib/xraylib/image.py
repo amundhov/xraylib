@@ -89,16 +89,12 @@ def _correlate_projections(proj1, proj2, method='brent'):
     f2 = fft(proj2)
     f2[0] = 0
     ir = np.real(ifft((f1 * f2.conjugate())))
-    utils.debug_print(ir = ir, f1 = f1, f2 = f2)
     (t0,) = np.unravel_index(np.argmax(ir), shape)
     if t0 >= shape[0]/2:
         t0 -= shape[0]
-    utils.debug_print(t0=t0)
 
     def cost_function(s, proj1, proj2):
-        utils.debug_print(s=s, shifted=ndimage.shift(proj2,s))
         cost = - np.corrcoef([proj1, ndimage.shift(proj2,s)])[0,1]
-        utils.debug_print(cost=cost)
         return cost
 
     if method == 'brent':

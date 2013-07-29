@@ -60,18 +60,18 @@ class Reconstructor(utils.Script):
         self.sino_group = self.sino_file[xraylib.SINOGRAM_GROUP]
 
         self.corrected_group = self.sino_file.require_group(xraylib.CORRECTED_SINOGRAM_GROUP)
-        self.reconstruction_group = self.sino_file.require_group(xraylib.CORRECTED_SINOGRAM_GROUP)
+        self.reconstruction_group = self.sino_file.require_group(xraylib.RECONSTRUCTION_GROUP)
 
 
     @utils.Script.timed
     def process_sinograms(self):
         for key,data_set in self.sino_group.items():
+            sinogram = data_set.value
             if len(data_set.shape) > 2:
-                slices = data_set.shape[2]
-                sinogram = data_set.value
+                slices = data_set.shape[0]
             else:
                 slices = 1
-                sinogram = data_set.value.shape((1,)+data_set.shape)
+                sinogram.shape = (1,)+data_set.shape
 
             corrected_dataset = self.corrected_group.require_dataset(
                     name=key,
@@ -90,20 +90,21 @@ class Reconstructor(utils.Script):
     @utils.Script.timed
     def reconstruct(self):
         for key,data_set in self.corrected_group.items():
-            # FIXME check whether corrected_sinogram is a stack of sinograms
             corrected_sinogram = data_set.value
-            corrected_sinogram = corrected_sinogram.astype('double').T,
+            if len(data_set.shape) > 2:
+                slices = data_set.shape[0]
+            else:
+                slices = 1
+                corrected_sinogram.shape= (1,)+data_set.shape
 
-            # Do a fast, filtered back projection reconstruction
-            # as initial guess for the SART reconstruction procedure
-            reconstruction = transform.iradon(
-                    corrected_sinogram,
-                    output_size = corrected_sinogram.shape[1]
-            )
-            for i in xrange(0,self.sart_iterations):
-                reconstruction = transform.iradon_sart(
-                        corrected_sinogram,
-                        image=reconstruction
+            for i in xrange(0,slices):
+                # skimage expects columns of projections
+                sino = corrected_sinogram[i].astype('double').T
+
+                reconstruction_dataset = self.reconstruction_group.require_dataset(
+                        name=key,
+                        shape=(slices,)+tuple([sino.shape[1]]*2),
+                        dtype="float32"
                 )
 
                 # Do a fast, filtered back projection reconstruction
