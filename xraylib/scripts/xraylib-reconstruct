@@ -25,7 +25,7 @@ class Reconstructor(utils.Script):
         input_group = optparse.OptionGroup(self.parser, "Input options")
         input_group.add_option("--sinogram-group", dest="sinogram_group",
                           help="", default=None)
-        input_group.add_option("--iterations", dest="sart_iterations",
+        input_group.add_option("--iterations", dest="sart_iterations", default=1,
                           help="Number of iterations to perform SART reconstruction. [default=1]")
 
 
@@ -44,12 +44,11 @@ class Reconstructor(utils.Script):
     def parse(self):
         super(Reconstructor, self).parse()
 
-        self.sart_iterations = self.options.sart_iterations
+        self.sart_iterations = utils.convert(self.options.sart_iterations,int)
 
         if len(self.args) > 1 or len(self.args) == 0:
             self.parser.error("Please specify one and only one sinogram file")
 
-        # TODO iterate over all datasets in xraylib.SINOGRAM_GROUP
         try:
             self.sino_file = h5py.File(self.args[0])
         except:
@@ -107,12 +106,19 @@ class Reconstructor(utils.Script):
                         image=reconstruction
                 )
 
-            reconstruction_dataset = self.reconstruction_group.require_dataset(
-                    name=key,
-                    shape=reconstruction.shape,
-                    dtype="float32"
-            )
-            reconstruction_dataset[:] = reconstruction
+                # Do a fast, filtered back projection reconstruction
+                # as initial guess for the SART reconstruction procedure
+                reconstruction = transform.iradon(
+                        sino,
+                        output_size = sino.shape[1]
+                )
+                for it in xrange(0,self.sart_iterations):
+                    reconstruction = transform.iradon_sart(
+                            sino,
+                            image=reconstruction
+                    )
+
+                reconstruction_dataset[i] = reconstruction
 
     @utils.Script.timed
     def output(self):
