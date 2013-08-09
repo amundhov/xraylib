@@ -10,6 +10,7 @@ from xraylib import f2w, files, utils, fit
 class Assembler(utils.Script):
     def __init__(self, **kwargs):
         super(Assembler, self).__init__()
+        self.usage = "xraylib-assemble <options> diffractogram.h5"
         self.description = """
         """
         self.peak = {}
@@ -26,7 +27,7 @@ class Assembler(utils.Script):
         input_group.add_option("--shape", dest="peak_shape",
                           help="Peak shape. [gaussian|delta]", default='gaussian')
         input_group.add_option("--peak-file", dest="peak_file",
-                          help="Exported peak from DAWN.", metavar="FILE")
+                          help="Exported peaks from DAWN.", metavar="FILE")
         input_group.add_option("--input-set", dest="input_set",
                           help='Override data set [default %s].' % (xraylib.DIFFRACTOGRAM_DATA_SET,),
                           metavar="STRING", default=xraylib.DIFFRACTOGRAM_DATA_SET)
@@ -55,6 +56,7 @@ class Assembler(utils.Script):
         if not all(os.path.exists(o) for o in self.args):
             self.parser.error("Could not read all files")
 
+        self.print_verbose('Loading slice %s' % 0)
         diffractogram = files.ImageFile(self.args[0]).getImage(self.options.input_set)
         darkcurrent_profile = files.ImageFile(self.args[0]).getImage(xraylib.DARKCURRENT_DATA_SET)
         self.input_data = np.zeros((stacks,)+diffractogram.shape)

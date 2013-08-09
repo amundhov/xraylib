@@ -28,30 +28,30 @@ class Calibration(utils.Script):
                           help="Origin and calibration limits in pixels instead of mm.")
         file_group = optparse.OptionGroup(self.parser, "File options")
         file_group.add_option("-o", "--out", dest="outfile",
-                      help="Save calibration image after subtracting darkcurrent", metavar="FILE")
+                      help="Save calibration image after subtracting darkcurrent.", metavar="FILE")
         file_group.add_option("--data-set", dest="data_set",
                      help="Location to save data set.", metavar="STRING", default=xraylib.CALIBRATION_IMAGE)
         file_group.add_option("-p", "--poni", dest="poni_file",
-                      help="File to save detector geometry", metavar="FILE", default="geometry.poni")
+                      help="File to save detector geometry.", metavar="FILE", default="geometry.poni")
 
         detector_group = optparse.OptionGroup(self.parser, "Detector options")
         detector_group.add_option("-D", "--detector", dest="detector_name",
                       help="Detector name", default=None)
         detector_group.add_option("--distance", dest="detector_distance",
-                      help="Detector distance from sample", metavar="<distance> [mm]",default=None)
+                      help="Detector distance from sample", metavar="distance [mm]",default=None)
         detector_group.add_option("--binning", dest="detector_binning", nargs=2, action='append',
-                      help="Pixels in x and y that detector is set to group.",
-                      metavar="<count>",default=None)
+                      help="Number of pixels that detector is set to group.",
+                      metavar="x y",default=None)
         detector_group.add_option ('--tilt', dest="detector_tilt", nargs=2, action='append',
                       help="",
-                      metavar="<tilt1> <tilt2> [degrees]", default=None)
+                      metavar="a b [degrees]", default=None)
         detector_group.add_option ('--origin', dest="detector_origin", nargs=2, action='append',
-                      help="Detector origin wrt sample",
-                      metavar="<x> <y> [mm]", default=None)
+                      help="Initial detector origin wrt beam",
+                      metavar="x y [mm]", default=None)
 
         calibration_group = optparse.OptionGroup(self.parser, "Calibration options")
         calibration_group.add_option ('--limits', dest="limits", nargs=2, action='append',
-                      metavar="<lower> <upper>", help="Radial distance [mm] to use for calibration.", default=None)
+                      metavar="lower upper", help="Radial distance [mm] to use for calibration.", default=None)
 
         self.parser.add_option_group(file_group)
         self.parser.add_option_group(detector_group)
