@@ -5,6 +5,8 @@ from scipy import optimize
 from scipy import fftpack
 from scipy import ndimage
 
+from skimage import filter as filters
+
 import utils
 
 def shift(img, count):
@@ -22,12 +24,60 @@ def shift(img, count):
     return tmp
 
 
-def sino_remove_highlights(sinogram):
+def sino_remove_bragg_spots(sinogram, block_size=3):
     """ If value is above some local threshold,
-        replace by median. Removes dodgy highlights
-        resulting from bragg spots of large crystallites
+        replace by median. Removes dodgy highlights and shadows
+        resulting from bragg peaks from large crystallites
         in diffracting orientations """
+
+    footprint = np.array(
+        [[  False, True, False ],
+         [  True,  True,  True ],
+         [  False, True, False ],
+         [  True,  True,  True ],
+         [  False, True, False ]])
+
+    # Only consider pixels which differ from the local median by this offset.
+    # Highlights and shadows will skew the arithmetic mean excluding valid line
+    # integrals from averaging
+
+    sinogram_high = np.zeros(sinogram.shape)
+    sinogram_low  = np.zeros(sinogram.shape)
+    sinogram_high[sinogram>0] = sinogram[sinogram>0]
+    sinogram_low[sinogram<0] = sinogram[sinogram<0]
+
+    offset_high = np.mean(sinogram[sinogram>0])
+    offset_low  = np.mean(sinogram[sinogram<0])
+
+    utils.debug_print(offset_high=offset_high, offset_low=offset_low)
+
+    mask_low = filters.threshold_adaptive(
+                sinogram,
+                block_size,
+                method='median',
+                offset=offset_low,
+             )
+    mask_high = ~filters.threshold_adaptive(
+                sinogram,
+                block_size,
+                method='median',
+                offset=offset_high,
+             )
+
+    mask = mask_low + mask_high
+    if float(mask.sum()) > 0.05 * mask.size:
+        #raise RuntimeError(
+        print(
+                "WARNING: Found more than 5% of values as \
+                bragg spots.")
     
+    median = ndimage.median_filter(sinogram, footprint=footprint)
+    ret = sinogram.copy()
+    ret[mask==True] = median[mask==True]
+    #return (mask_low, mask_high, ret, median)
+    return ret
+        
+        
 
 def sino_deinterlace(sinogram):
     sino_deinterlaced = sinogram.copy()
@@ -42,17 +92,15 @@ def sino_deinterlace(sinogram):
     return sino_deinterlaced
 
 def sino_center(sinogram):
-    """ Finds rotation axis of sinogram by using first
-    and last projections which are assumed to be 
-    180 degrees apart. Last projection is reversed and
-    correlated with the first and the shifted image
-    with rotation axis in center is returned. """
+    """ Finds rotation axis of sinogram by using first and last projections
+    which are assumed to be 180 degrees apart. Last projection is reversed and
+    correlated with the first and the shifted image with rotation axis in
+    center is returned. """
+
     proj1 = sinogram[0,...]
     proj2 = sinogram[-1,::-1]
     shift = _correlate_projections(proj1, proj2)
     return ndimage.shift(sinogram, (0,-shift))
-    #center = proj1.shape[0] / 2. + 0.5 + shift / 2.
-    #return center
 
 
 
