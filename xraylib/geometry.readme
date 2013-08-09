@@ -1,0 +1,66 @@
+From pyFAI
+
+ Rotations of the detector are applied first Rot around axis 1,
+    then axis 2 and finally around axis 3:
+
+    Axis 1 is along first dimension of detector (when not tilted),
+    this is the slow dimension of the image array in C or Y
+    x1={1,0,0}
+
+    Axis 2 is along second dimension of detector (when not tilted),
+    this is the fast dimension of the image in C or X
+    x2={0,1,0}
+
+    Axis 3 is along the incident X-Ray beam
+    x3={0,0,1}
+
+
+    R = rotM3.rotM2.rotM1 = {
+        { cos[rot2] cos[rot3],
+          cos[rot3] sin[rot1] sin[rot2]-cos[rot1] sin[rot3],
+          cos[rot1] cos[rot3] sin[rot2]+sin[rot1] sin[rot3]},
+        { cos[rot2] sin[rot3],
+          cos[rot1] cos[rot3]+sin[rot1] sin[rot2] sin[rot3],
+         -cos[rot3] sin[rot1]+cos[rot1] sin[rot2] sin[rot3]},
+        {-sin[rot2],
+          cos[rot2] sin[rot1],
+          cos[rot1] cos[rot2]}
+    }
+
+
+    R.P = {t1, t2, t3}
+    t1 = R.P.x1 = d1*cos(rot2)*cos(rot3) + d2*(cos(rot3)*sin(rot1)*sin(rot2) - cos(rot1)*sin(rot3)) + L*(cos(rot1)*cos(rot3)*sin(rot2) + sin(rot1)*sin(rot3))
+    t2 = R.P.x2 = d1*cos(rot2)*sin(rot3)  + d2*(cos(rot1)*cos(rot3) + sin(rot1)*sin(rot2)*sin(rot3)) + L*(-(cos(rot3)*sin(rot1)) + cos(rot1)*sin(rot2)*sin(rot3))
+    t3 = R.P.x3 = d2*cos(rot2)*sin(rot1) - d1*sin(rot2) + L*cos(rot1)*cos(rot2)
+
+    R.{d1,d2,0} = {
+        d1*cos(rot2)*cos(rot3) + d2*(cos(rot3)*sin(rot1)*sin(rot2) - cos(rot1)*sin(rot3)),
+        d1*cos(rot2)*sin(rot3)  + d2*(cos(rot1)*cos(rot3) + sin(rot1)*sin(rot2)*sin(rot3)),
+        d2*cos(rot2)*sin(rot1) - d1*sin(rot2)
+    }
+        
+     / -
+    /
+   /
+  /
+ /      |
+--------|
+
+    P_veijo[tilt1,tilt2]_(d1,d2,0) = { d1 sin[tilt1] , d2 sin[tilt2], d1 cos[tilt1] + d2 cos[tilt2] }
+
+->    sin[tilt0] = cos(rot2)cos(rot3),
+      cos(rot3)*sin(rot1)*sin(rot2) - cos(rot1)*sin(rot3) = 0
+
+      cos(rot2)sin(rot3) = 0,
+      sin[tilt1] = cos(rot1)*cos(rot3) + sin(rot1)*sin(rot2)*sin(rot3)        
+        
+      cos(rot2)*sin(rot1) = cos[tilt1],
+      - sin(rot2) = cos[tilt0]
+
+
+    R.21 = rotM2.rotM1 = {
+        { cos[rot2], 0, 0},
+        { 0, cos[rot1], - sin[rot1]]},
+        {-sin[rot2], cos[rot2] sin[rot1], cos[rot1] cos[rot2]}
+    }
+
