@@ -24,6 +24,8 @@ class Assembler(utils.Script):
                           help="Peak channel position")
         input_group.add_option("--fwhm", dest="peak_fwhm",
                           help="Peak FWHM full width at half maximum")
+        input_group.add_option("--fit-width", dest="fit_width",
+                          help="Number of FWHM to include in peak fitting. [default 2]")
         input_group.add_option("--shape", dest="peak_shape",
                           help="Peak shape. [gaussian|delta]", default='gaussian')
         input_group.add_option("--peak-file", dest="peak_file",
@@ -74,9 +76,10 @@ class Assembler(utils.Script):
         self.output_shape = self.input_data.shape[:-1]
 
         self.peaks = [{
-                'fwhm'     : self.options.peak_fwhm,
-                'position' : self.options.peak_position,
-                'shape'    : self.options.peak_shape
+                'fwhm'      : self.options.peak_fwhm,
+                'position'  : self.options.peak_position,
+                'shape'     : self.options.peak_shape
+                'fit_width' : self.options.fit_width
         }]
 
         self.peaks[0] = utils.strip_none_values(self.peak)
@@ -101,10 +104,14 @@ class Assembler(utils.Script):
                         peak = dict(zip(header,peak_line))
                         if 'shape' not in peak:
                             peak['shape'] = fit.GAUSSIAN
+                        peak = utils.strip_none_values(peak)
+                        if 'fit_width' in peak:
+                            print peak['fit_width']
                         if 'position' in peak and 'fwhm' in peak:
                             self.peaks.append(peak)
                 except:
                     self.parser.error("Could not parse peak file %s" % (self.options.peak_file,))
+
 
         self.out_file = h5py.File(self.options.outfile)
         self.sinogram_group = self.out_file.require_group(xraylib.SINOGRAM_GROUP)
@@ -130,8 +137,12 @@ class Assembler(utils.Script):
     def assemble(self, peak):
         """ Do weighted least squares fitting of peak shape
         to linear background using data in interval of four FWHM. """
-        r_min = int(np.round(peak['position'] - 2*peak['fwhm']))
-        r_max = int(np.round(peak['position'] + 2*peak['fwhm']))
+        if 'fit_width' in peak:
+            fit_width = peak['fit_width'] / 2.0
+        else:
+            fit_width = 2
+        r_min = int(np.round(peak['position'] - fit_width*peak['fwhm']))
+        r_max = int(np.round(peak['position'] + fit_width*peak['fwhm']))
         r = np.arange(r_min,r_max)
 
         peak_fun = fit.get_peak_function(**peak)
