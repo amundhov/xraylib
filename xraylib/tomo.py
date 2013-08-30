@@ -73,7 +73,7 @@ def sino_deinterlace(sinogram):
     else:
         shift = _correlate_images(sino_even, sino_odd)
 
-    sino_deinterlaced[1::2,...] = ndimage.shift(sinogram[1::2,...],(0,shift))
+    sino_deinterlaced[1::2,...] = ndimage.shift(sinogram[1::2,...],(0,shift),mode='nearest')
     return sino_deinterlaced
 
 def sino_center(sinogram):
@@ -85,8 +85,7 @@ def sino_center(sinogram):
     proj1 = sinogram[0,...]
     proj2 = sinogram[-1,::-1]
     shift = _correlate_projections(proj1, proj2)
-    return ndimage.shift(sinogram, (0,-shift))
-
+    return ndimage.shift(sinogram, (0,-shift), mode='nearest')
 
 
 # Code taken and adapted from
@@ -108,9 +107,9 @@ def _correlate_images(im1, im2, method='brent'):
 
     def cost_function(s, im1, im2):
         return - np.corrcoef([im1[3:-3, 3:-3].ravel(),
-                            ndimage.shift(im2, (0, s))[3:-3, 3:-3].ravel()])[0, 1]
+                            ndimage.shift(im2, (0, s),mode='nearest')[3:-3, 3:-3].ravel()])[0, 1]
     if method == 'brent':
-        newim2 = ndimage.shift(im2, (t0, t1))
+        newim2 = ndimage.shift(im2, (t0, t1),mode='nearest')
         refine = optimize.brent(cost_function, args=(im1, newim2),
                         brack=[-1, 1], tol=1.e-2)
     return t1 + refine
@@ -127,13 +126,12 @@ def _correlate_projections(proj1, proj2, method='brent'):
         t0 -= shape[0]
 
     def cost_function(s, proj1, proj2):
-        cost = - np.corrcoef([proj1, ndimage.shift(proj2,s)])[0,1]
+        cost = - np.corrcoef([proj1, ndimage.shift(proj2,s,mode='nearest')])[0,1]
         return cost
 
     if method == 'brent':
-        newproj2 = ndimage.shift(proj2, (t0,))
+        newproj2 = ndimage.shift(proj2, (t0,),mode='nearest')
         refine = optimize.brent(cost_function, args=(proj1, newproj2),
                         brack=[-1, 1], tol=1.e-5)
 
     return t0 + refine
-
