@@ -70,6 +70,7 @@ class Reconstructor(utils.Script):
     @utils.Script.timed
     def process_sinograms(self):
         for key,data_set in self.sino_group.items():
+            self.print_verbose("--->  ", key)
             sinogram = data_set.value
             if len(data_set.shape) > 2:
                 slices = data_set.shape[0]
@@ -84,11 +85,11 @@ class Reconstructor(utils.Script):
             )
             ret = np.zeros(sinogram.shape)
             for i in xrange(0,slices):
-            #    corrected_sinogram = tomo.sino_remove_bragg_spots(sinogram[i])
-            #    corrected_sinogram = tomo.sino_deinterlace(corrected_sinogram)
-            #    corrected_sinogram = tomo.sino_center(corrected_sinogram)
-            #   ret[i,...] = corrected_sinogram
-                ret[i,...] = sinogram[i]
+                corrected_sinogram = tomo.sino_deinterlace(sinogram[i])
+                corrected_sinogram = tomo.sino_center(corrected_sinogram)
+                corrected_sinogram = tomo.sino_remove_bragg_spots(corrected_sinogram)
+
+                ret[i,...] = corrected_sinogram
 
             corrected_dataset[:] = ret.squeeze()
 
@@ -104,12 +105,14 @@ class Reconstructor(utils.Script):
                 corrected_sinogram.shape= (1,)+data_set.shape
 
             for i in xrange(0,slices):
-                # skimage expects columns of projections
+                # skimage expects columns of projections so transpose
                 sino = corrected_sinogram[i].astype('double').T
 
+                if key in self.reconstruction_group:
+                    del self.reconstruction_group[key]
                 reconstruction_dataset = self.reconstruction_group.require_dataset(
                         name=key,
-                        shape=(slices,)+tuple([sino.shape[1]]*2),
+                        shape=(slices,)+tuple([sino.shape[0]]*2),
                         dtype="float32"
                 )
 
@@ -117,7 +120,7 @@ class Reconstructor(utils.Script):
                 # as initial guess for the SART reconstruction procedure
                 reconstruction = transform.iradon(
                         sino,
-                        output_size = sino.shape[1]
+                        output_size = sino.shape[0]
                 )
                 try:
                     for it in xrange(0,self.sart_iterations):
