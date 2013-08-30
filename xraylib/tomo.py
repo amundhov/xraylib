@@ -26,8 +26,7 @@ def sino_remove_bragg_spots(sinogram, block_size=5, tolerance=0.05, sensitivity_
          [  False, True, False ]])
 
     # Only consider pixels which differ from the local median by this offset.
-    # Highlights and shadows will skew the arithmetic mean excluding valid line
-    # integrals from averaging
+    # Highlights and shadows will skew the arithmetic mean so use median.
 
     sinogram_high = np.zeros(sinogram.shape)
     sinogram_low  = np.zeros(sinogram.shape)
@@ -51,18 +50,20 @@ def sino_remove_bragg_spots(sinogram, block_size=5, tolerance=0.05, sensitivity_
                 method='median',
                 offset=offset_high,
              )
+    if float(mask_high.sum()) > tolerance * mask_high.size:
+        # Too many values marked as spots. Ignoring hilights.
+        print('Found more than %s%% of values as hilights' % (tolerance * 100))
+        mask_high = np.zeros(shape=sinogram.shape, dtype=bool)
+    if float(mask_low.sum()) > tolerance * mask_low.size:
+        # Too many values marked as spots. Ignoring shadows.
+        print('Found more than %s%% of values as shadows' % (tolerance * 100))
+        mask_low = np.zeros(shape=sinogram.shape, dtype=bool)
 
     mask = mask_low + mask_high
-    if float(mask.sum()) > 0.05 * mask.size:
-        #raise RuntimeError(
-        print(
-                "WARNING: Found more than 5% of values as \
-                bragg spots.")
-    
+    # FIXME, only calculate values in mask.
     median = ndimage.median_filter(sinogram, footprint=footprint)
     ret = sinogram.copy()
     ret[mask==True] = median[mask==True]
-    #return (mask_low, mask_high, ret, median)
     return ret
         
         
