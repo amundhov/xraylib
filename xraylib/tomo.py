@@ -9,22 +9,7 @@ from skimage import filter as filters
 
 import utils
 
-def shift(img, count):
-    """ Shifts every odd line by a constant number of pixels """
-    # TODO subpixel shift using ndarray.shift , spline interpolation
-    tmp = np.zeros(img.shape,dtype=img.dtype)
-
-    if count > 0:
-        tmp[::2,:-count] = img[::2,count:]
-        tmp[1::2,:] = img[1::2,:]
-    else:
-        count = - count
-        tmp[::2,:] = img[::2,:]
-        tmp[1::2,:-count] = img[1::2,count:]
-    return tmp
-
-
-def sino_remove_bragg_spots(sinogram, block_size=3):
+def sino_remove_bragg_spots(sinogram, block_size=5, tolerance=0.05, sensitivity_low=1.5, sensitivity_high=0.2):
     """ If value is above some local threshold,
         replace by median. Removes dodgy highlights and shadows
         resulting from bragg peaks from large crystallites
