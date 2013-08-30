@@ -15,10 +15,13 @@ def sino_remove_bragg_spots(sinogram, block_size=5, tolerance=0.05, sensitivity_
         resulting from bragg peaks from large crystallites
         in diffracting orientations """
 
+    # Footprint for median value to replace bragg spots.
+    # Usually the spots are contained to one projection,
+    # so we sample above and below for good values.
     footprint = np.array(
         [[  False, True, False ],
          [  True,  True,  True ],
-         [  False, True, False ],
+         [  False, False, False ],
          [  True,  True,  True ],
          [  False, True, False ]])
 
