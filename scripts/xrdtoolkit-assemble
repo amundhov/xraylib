@@ -4,13 +4,13 @@ import numpy as np
 import os, optparse, itertools, locale
 import h5py, fabio
 
-import xraylib
-from xraylib import f2w, files, utils, fit
+import xrdtoolkit
+from xrdtoolkit import f2w, files, utils, fit
 
 class Assembler(utils.Script):
     def __init__(self, **kwargs):
         super(Assembler, self).__init__()
-        self.usage = "xraylib-assemble <options> diffractogram.h5"
+        self.usage = "xrdtoolkit-assemble <options> diffractogram.h5"
         self.description = """
         """
         self.peak = {}
@@ -31,8 +31,8 @@ class Assembler(utils.Script):
         input_group.add_option("--peak-file", dest="peak_file",
                           help="Exported peaks from DAWN.", metavar="FILE")
         input_group.add_option("--input-set", dest="input_set",
-                          help='Override data set [default %s].' % (xraylib.DIFFRACTOGRAM_DATA_SET,),
-                          metavar="STRING", default=xraylib.DIFFRACTOGRAM_DATA_SET)
+                          help='Override data set [default %s].' % (xrdtoolkit.DIFFRACTOGRAM_DATA_SET,),
+                          metavar="STRING", default=xrdtoolkit.DIFFRACTOGRAM_DATA_SET)
         self.parser.add_option("--flip", dest="flip",
                           action="store_true", default=False,
                           help="Flip every other scan line.")
@@ -60,14 +60,14 @@ class Assembler(utils.Script):
 
         self.print_verbose('Loading slice %s' % 0)
         diffractogram = files.ImageFile(self.args[0]).getImage(self.options.input_set)
-        darkcurrent_profile = files.ImageFile(self.args[0]).getImage(xraylib.DARKCURRENT_DATA_SET)
+        darkcurrent_profile = files.ImageFile(self.args[0]).getImage(xrdtoolkit.DARKCURRENT_DATA_SET)
         self.input_data = np.zeros((stacks,)+diffractogram.shape)
         self.darkcurrent_profile = np.zeros((stacks,)+darkcurrent_profile.shape)
         self.input_data[0] = diffractogram
         self.darkcurrent_profile[0] = darkcurrent_profile
 
         diff_seq = files.ImageSequence(self.args,data_set=self.options.input_set)
-        dark_seq = files.ImageSequence(self.args,data_set=xraylib.DARKCURRENT_DATA_SET)
+        dark_seq = files.ImageSequence(self.args,data_set=xrdtoolkit.DARKCURRENT_DATA_SET)
         for i in xrange(1,stacks):
             self.print_verbose('Loading slice %s' % i)
             self.input_data[i] = next(diff_seq)
@@ -114,8 +114,8 @@ class Assembler(utils.Script):
 
 
         self.out_file = h5py.File(self.options.outfile)
-        self.sinogram_group = self.out_file.require_group(xraylib.SINOGRAM_GROUP)
-        self.peak_group = self.out_file.require_group(xraylib.SINOGRAM_PEAK_GROUP)
+        self.sinogram_group = self.out_file.require_group(xrdtoolkit.SINOGRAM_GROUP)
+        self.peak_group = self.out_file.require_group(xrdtoolkit.SINOGRAM_PEAK_GROUP)
 
 
     @utils.Script.timed

@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from common import TestQuantity
-from xraylib import crossection
+from xrdtoolkit import crossection
 
 class TestCrossSection(TestQuantity):
     _atomic_numbers = [1, 8, 29]

@@ -1,7 +1,7 @@
 import unittest
 
-import xraylib
-from xraylib import common
+import xrdtoolkit
+from xrdtoolkit import common
 
 
 class TestCommon(unittest.TestCase):

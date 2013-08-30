@@ -3,7 +3,7 @@ import numpy as np
 
 import fabio
 
-import xraylib
+import xrdtoolkit
 
 EDF = '.edf'
 HDF5 = '.h5'
@@ -45,16 +45,16 @@ class ImageFile:
                 try:
                     self.image = f[data_set].value
                 except KeyError:
-                    if xraylib.IMAGE_PATH not in f:
+                    if xrdtoolkit.IMAGE_PATH not in f:
                         raise KeyError('Data set %s does not exist' % (data_set,))
                     else:
-                        self.image = f[xraylib.IMAGE_PATH]
+                        self.image = f[xrdtoolkit.IMAGE_PATH]
         else:
             import fabio
             self.image = fabio.open(self.file_path).data
         return self.image
 
-    def saveImage(self, image, data_set='/xraylib/image'):
+    def saveImage(self, image, data_set='/xrdtoolkit/image'):
         if self.extension == '.h5':
             import h5py
             with h5py.File(self.file_path) as f:
@@ -72,7 +72,7 @@ class ImageFile:
                 edf_image.setData(image)
             edf_image.write(self.file_path)
 
-def ImageSequence(file_paths, data_set=xraylib.IMAGE_PATH, group_frames=False):
+def ImageSequence(file_paths, data_set=xrdtoolkit.IMAGE_PATH, group_frames=False):
     if all([os.path.splitext(file_name)[1] == '.edf' for file_name in file_paths]):
         edf_image = fabio.edfimage.edfimage().read(file_paths[0])
         nframes = edf_image.nframes

@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from common import TestQuantity
-from xraylib import sample
+from xrdtoolkit import sample
 
 class TestSample(TestQuantity):
     _beam_energy = [0.8147, 9.058, 12.70, 913.4, 6324]

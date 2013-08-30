@@ -1,8 +1,8 @@
 import numpy as np
 import optparse,os, time, inspect
 
-import xraylib, fabio
-from xraylib import files
+import xrdtoolkit, fabio
+from xrdtoolkit import files
 
 def debug_print(**kwargs):
     for name,var in kwargs.iteritems():

@@ -61,7 +61,7 @@ def sino_remove_bragg_spots(sinogram, block_size=5, tolerance=0.05, sensitivity_
     ret = sinogram.copy()
     ret[mask==True] = median[mask==True]
     return ret
-        
+    #return (median_value, offset_high, offset_low, mask_low, mask_high, median, ret)
         
 
 def sino_deinterlace(sinogram):

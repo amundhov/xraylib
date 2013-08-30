@@ -1,4 +1,4 @@
- - Rename xraylib.files -> xraylib.io
+ - Rename xrdtoolkit.files -> xrdtoolkit.io
           ImageSequence -> Images
  - Remove any "unecessary options"
  - Addapt scripts to take parameters from DAWN. Provide example workflows

@@ -9,13 +9,13 @@ import os, sys, glob
 script_files = glob.glob("scripts/*")
 install_requires=[ o.strip('\n') for o in open('requirements.txt').readlines() if not '#' in o]
 
-setup(name='xraylib',
+setup(name='xrdtoolkit',
       version='0.9',
-      description='Xraylib provides routines for calculating cross-sections, form factors and other quantities commonly needed in X-ray experiments',
+      description='xrdtoolkit provides routines for calculating cross-sections, form factors and other quantities commonly needed in X-ray experiments',
       install_requires=install_requires,
-      package_data = { 'xraylib' : ['data/*.pickle'], },
+      package_data = { 'xrdtoolkit' : ['data/*.pickle'], },
       include_package_data=True,
-      packages=['xraylib'],
+      packages=['xrdtoolkit'],
       scripts=script_files,
       test_suite='tests',
       author='Amund Hov',

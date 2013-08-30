@@ -15,10 +15,10 @@ class Bunch:
         return format_str % tuple(self.__dict__.values())
 
 #
-# >>> import xraylib
-# >>> xraylib.XrayTable.dtype # list all available fields
-# >>> xraylib.Xraytable['Density'][1] # density of Hydrogen
-# >>> xraylib.Xraytable[1]['Density'] # also density of Hydrogen
+# >>> import xrdtoolkit
+# >>> xrdtoolkit.XrayTable.dtype # list all available fields
+# >>> xrdtoolkit.Xraytable['Density'][1] # density of Hydrogen
+# >>> xrdtoolkit.Xraytable[1]['Density'] # also density of Hydrogen
 #
 # Please note that numpy's dot function for matrix multiplication does _not_
 # work with scipy sparse matrices (such as the JumpMatrix). Use jumpMatrix.dot(foo)

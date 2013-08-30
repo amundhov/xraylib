@@ -5,4 +5,4 @@ fabio
 pyFAI
 numpy
 scipy
-scikits-image
+#scikits-image > 0.8.0

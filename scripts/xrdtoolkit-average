@@ -3,8 +3,8 @@
 import os, optparse
 import numpy as np
 
-import xraylib
-from xraylib import f2w, files, utils
+import xrdtoolkit
+from xrdtoolkit import f2w, files, utils
 
 class Averager(utils.Script):
     def __init__(self):
@@ -19,7 +19,7 @@ class Averager(utils.Script):
         output_group.add_option("-o", "--out", dest="outfile",
                           help="File to save averaged dataset", metavar="FILE", default="averaged.h5")
         output_group.add_option("--data-set", dest="data_set",
-                          help="Location to save data set (hdf5 etc).", metavar="STRING", default=xraylib.AVERAGE_DATA_SET)
+                          help="Location to save data set (hdf5 etc).", metavar="STRING", default=xrdtoolkit.AVERAGE_DATA_SET)
         self.parser.add_option_group(output_group)
         self.parser.add_option("--method",
                           dest="method", default="median",

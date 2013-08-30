@@ -1,1 +1,1 @@
-include xraylib/data/*.pickle
+include xrdtoolkit/data/*.pickle

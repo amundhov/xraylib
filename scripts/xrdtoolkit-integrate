@@ -5,8 +5,8 @@ import os, sys, optparse
 import itertools, threading, Queue
 import h5py, fabio
 
-import xraylib
-from xraylib import f2w, files, utils
+import xrdtoolkit
+from xrdtoolkit import f2w, files, utils
 
 try:
     import pyFAI
@@ -51,7 +51,7 @@ class Integrator(utils.Script):
         output_group.add_option("-o", "--out", dest="outfile",
                           help="File to save integrated dataset.", metavar="FILE", default="diffractogram.h5")
         output_group.add_option("--data-set", dest="data_set",
-                          help="Location to save data set.", metavar="STRING", default=xraylib.DIFFRACTOGRAM_DATA_SET)
+                          help="Location to save data set.", metavar="STRING", default=xrdtoolkit.DIFFRACTOGRAM_DATA_SET)
 
         self.parser.add_option_group(input_group)
         self.parser.add_option_group(output_group)
@@ -92,7 +92,7 @@ class Integrator(utils.Script):
             self.dark = files.averageImages([ os.path.join(dark_directory, o) for o in dark_names ])
 
         if self.options.dark and os.path.exists(self.options.dark):
-            self.dark = files.ImageFile(self.options.dark).getImage(xraylib.AVERAGE_DATA_SET)
+            self.dark = files.ImageFile(self.options.dark).getImage(xrdtoolkit.AVERAGE_DATA_SET)
 
 
         if self.options.disable_gpu is not None:
@@ -164,12 +164,12 @@ class Integrator(utils.Script):
         )
         self.diffractogram = np.zeros(tuple(self.parameter_count) + (self.integration_points,), dtype="float32")
         self.darkcurrent = group.require_dataset(
-                           name=xraylib.DARKCURRENT_DATA_SET,
+                           name=xrdtoolkit.DARKCURRENT_DATA_SET,
                            shape=self.darkprofile_shape,
                            dtype="float32"
         )
         self.two_theta = group.require_dataset(
-                           name=xraylib.TWO_THETA_DATA_SET,
+                           name=xrdtoolkit.TWO_THETA_DATA_SET,
                            shape=(self.integration_points,),
                            dtype="float32"
         )
