@@ -78,7 +78,7 @@ class Assembler(utils.Script):
         self.peaks = [{
                 'fwhm'      : self.options.peak_fwhm,
                 'position'  : self.options.peak_position,
-                'shape'     : self.options.peak_shape
+                'shape'     : self.options.peak_shape,
                 'fit_width' : self.options.fit_width
         }]
 
