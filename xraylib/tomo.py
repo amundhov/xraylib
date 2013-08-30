@@ -28,27 +28,23 @@ def sino_remove_bragg_spots(sinogram, block_size=5, tolerance=0.05, sensitivity_
     # Only consider pixels which differ from the local median by this offset.
     # Highlights and shadows will skew the arithmetic mean so use median.
 
-    sinogram_high = np.zeros(sinogram.shape)
-    sinogram_low  = np.zeros(sinogram.shape)
-    sinogram_high[sinogram>0] = sinogram[sinogram>0]
-    sinogram_low[sinogram<0] = sinogram[sinogram<0]
+    median_value = np.median(sinogram)
+    offset_high  = np.median(sinogram[sinogram>median_value])
+    offset_low   = np.median(sinogram[sinogram<median_value])
 
-    offset_high = np.mean(sinogram[sinogram>0])
-    offset_low  = np.mean(sinogram[sinogram<0])
+    utils.debug_print(median=median_value,offset_high=offset_high, offset_low=offset_low)
 
-    utils.debug_print(offset_high=offset_high, offset_low=offset_low)
-
-    mask_low = filters.threshold_adaptive(
-                sinogram,
-                block_size,
-                method='median',
-                offset=offset_low,
+    mask_low = ~filters.threshold_adaptive(
+                 sinogram,
+                 block_size,
+                 method='median',
+                 offset=-sensitivity_low*(offset_low-median_value),
              )
-    mask_high = ~filters.threshold_adaptive(
-                sinogram,
-                block_size,
-                method='median',
-                offset=offset_high,
+    mask_high = filters.threshold_adaptive(
+                 sinogram,
+                 block_size,
+                 method='median',
+                 offset=-sensitivity_high*(offset_high-median_value),
              )
     if float(mask_high.sum()) > tolerance * mask_high.size:
         # Too many values marked as spots. Ignoring hilights.
