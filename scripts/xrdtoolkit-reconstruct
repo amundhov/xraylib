@@ -24,31 +24,42 @@ class Reconstructor(utils.Script):
 
         input_group = optparse.OptionGroup(self.parser, "Input options")
         input_group.add_option("--sinogram-group", dest="sinogram_group",
-                          help="", default=None)
+                          help="Group containing sinograms.", default=xrdtoolkit.SINOGRAM_GROUP)
         input_group.add_option("--iterations", dest="sart_iterations", default=1,
                           help="Number of iterations to perform SART reconstruction. [default=1]")
-        self.parser.add_option("--correct_center", dest="correct_center",
-                          action="store_true", default=True,
-                          help="Attempt to find center of rotation.")
-        self.parser.add_option("--correct_interlacing", dest="correct_center",
-                          action="store_true", default=True,
-                          help="Perform deinterlacing.")
-
+        self.parser.add_option("--no-center-correction", dest="no_correct_center",
+                          action="store_true", default=False,
+                          help="Attempt to find center of rotation [default]")
+        self.parser.add_option("--no-denterlacing", dest="no_correct_interlacing",
+                          action="store_true", default=False,
+                          help="Perform deinterlacing [default]")
+        self.parser.add_option("--no-bragg-spots", dest="no_bragg_spots",
+                          action="store_true", default=False,
+                          help="Attempt to find and remove bragg spots [default]")
+        self.parser.add_option("--disable-corrections", dest="disable_corrections",
+                          action="store_true", default=False,
+                          help="Do not perform any corrections prior to reconstruction.")
 
         output_group = optparse.OptionGroup(self.parser, "Output options")
-        output_group.add_option("--output-sinogram", dest="output_sinogram",
-                          action="store_true", default=True)
-        output_group.add_option("--output-reconstruction", dest="output_reconstruction",
-                          action="store_true", default=True)
+        #output_group.add_option("--sinogram-group", dest="sinogram_group",
+        #                  help="Group containing sinograms.", default=xrdtoolkit.SINOGRAM_GROUP)
 
         self.parser.add_option_group(input_group)
-        self.parser.add_option_group(output_group)
 
     @utils.Script.timed
     def parse(self):
         super(Reconstructor, self).parse()
 
         self.sart_iterations = utils.convert(self.options.sart_iterations,int)
+
+        self.correct_interlacing = not self.options.no_correct_interlacing
+        self.correct_center      = not self.options.no_correct_center
+        self.remove_bragg_spots  = not self.options.no_bragg_spots
+
+        if self.options.disable_corrections:
+            self.correct_interlacing = False
+            self.correct_center = False
+            self.remove_bragg_spots = False
 
         if len(self.args) > 1 or len(self.args) == 0:
             self.parser.error("Please specify one and only one sinogram file")
@@ -58,11 +69,10 @@ class Reconstructor(utils.Script):
         except:
             self.parser.error("Could not open sinogram")
 
-        if not xrdtoolkit.SINOGRAM_GROUP in self.sino_file:
-            self.parser.error('File does not have group %s' % (xrdtoolkit.SINOGRAM_GROUP,))
+        if not self.options.sinogram_group in self.sino_file:
+            self.parser.error('File does not have group %s' % (self.options.sinogram_group,))
 
-        self.sino_group = self.sino_file[xrdtoolkit.SINOGRAM_GROUP]
-
+        self.sino_group = self.sino_file[self.options.sinogram_group]
         self.corrected_group = self.sino_file.require_group(xrdtoolkit.CORRECTED_SINOGRAM_GROUP)
         self.reconstruction_group = self.sino_file.require_group(xrdtoolkit.RECONSTRUCTION_GROUP)
 
@@ -85,9 +95,13 @@ class Reconstructor(utils.Script):
             )
             ret = np.zeros(sinogram.shape)
             for i in xrange(0,slices):
-                corrected_sinogram = tomo.sino_deinterlace(sinogram[i])
-                corrected_sinogram = tomo.sino_center(corrected_sinogram)
-                corrected_sinogram = tomo.sino_remove_bragg_spots(corrected_sinogram)
+                corrected_sinogram = sinogram[i]
+                if self.correct_interlacing:
+                    corrected_sinogram = tomo.sino_deinterlace(corrected_sinogram)
+                if self.correct_center:
+                    corrected_sinogram = tomo.sino_center(corrected_sinogram)
+                if self.remove_bragg_spots:
+                    corrected_sinogram = tomo.sino_remove_bragg_spots(corrected_sinogram)
 
                 ret[i,...] = corrected_sinogram
 
