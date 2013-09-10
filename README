@@ -1,17 +1,44 @@
-On initial use you should run setup.py in order to generate the data files used
-by the module
+=== INSTALLATION ===
 
-   :~$ python setup.py
+Normally you will want to create a virtual environment for using xrdtoolkit, as
+it has not been packaged for any distributions. From your directory of choice,
+   :~$ virtualenv --site-site-packages venv
+   :~$ source venv/bin/activate
 
-It's also possible to generate a python egg for use with easy_install if you
-want a site-wide installation
+The second line needs to be executed every time you want to use the xrdtoolkit
+installation contained in the virtual environment.
+
+Then, to install xrdtoolkit simply invoke
+   (venv):~$ ./develop.sh
+
+which will pickle the x-ray data tables and ask setup.py to link up the
+xrdtoolkit module and its scripts in your site-packages or,
+
+   (venv):~$ ./install.sh
+
+to perform a normal installation (development changes won't be seen).
+
+Of course it's also possible to generate a python egg for use with easy_install
 
    $~: python setup.py bdist_egg && easy_install dist/*.egg
 
-f2w.py
-   Contains routines for calibrating and integrating diffraction images.
-   Example usage is availabe at the head of the file.
+
+=== Overview ===
+
+scripts/
+
+The scripts directory contains command line scripts making available
+functionality for performing detector tilt calibration (xrdtoolkit-calibrate),
+azimuthal integration of series of diffraction images (xrdtoolkit-integrate),
+peak-fitting for assembling DSCT sinograms (xrdtoolkit-assemble) and automated
+sinogram correction and reconstruction (xrdtoolkit-reconstruct).
+
+examples/
+
+
+
+xrdtoolkit/
 
 sample.py
    Class for calculating mass attenuation, form factors etc. of sample
-   according to stoichiometry and thickness.
+   according to sample stoichiometry and thickness.
